@@ -15,7 +15,7 @@ The map-first STAC visualizer at <https://developmentseed.org/stac-map>.
 Includes:
 
 - Natural language collection search
-- **stac-geoparquet** visualization
+- **stac-geoparquet** visualization, upload, and download
 
 > [!WARNING]
 > This application is in its infancy :baby: and will change significantly and/or break at any time.
