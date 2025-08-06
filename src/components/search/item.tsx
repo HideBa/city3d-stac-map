@@ -15,7 +15,6 @@ import {
   Select,
   Stack,
   Switch,
-  Text,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { LuPause, LuPlay, LuSearch, LuX } from "react-icons/lu";
@@ -34,7 +33,7 @@ export default function ItemSearch({
   collection: StacCollection;
   links: StacLink[];
 }) {
-  const { setItems, setPicked } = useStacMap();
+  const { setItems } = useStacMap();
   const [search, setSearch] = useState<StacSearch>();
   const [link, setLink] = useState<StacLink | undefined>(links[0]);
   const [datetime, setDatetime] = useState<string>();
@@ -44,9 +43,8 @@ export default function ItemSearch({
   useEffect(() => {
     if (!search) {
       setItems(undefined);
-      setPicked(undefined);
     }
-  }, [search, setItems, setPicked]);
+  }, [search, setItems]);
 
   const methods = createListCollection({
     items: links.map((link) => {
@@ -81,8 +79,6 @@ export default function ItemSearch({
         <Switch.Label>Use viewport bounds</Switch.Label>
         <Switch.Control></Switch.Control>
       </Switch.Root>
-
-      <Text></Text>
 
       <Datetime
         interval={collection.extent?.temporal?.interval[0]}
@@ -132,7 +128,14 @@ export default function ItemSearch({
               datetime,
               bbox:
                 useViewportBounds && map
-                  ? map.getBounds().toArray().flat()
+                  ? normalizeBbox(
+                      map.getBounds().toArray().flat() as [
+                        number,
+                        number,
+                        number,
+                        number,
+                      ],
+                    )
                   : undefined,
             })
           }
@@ -355,4 +358,27 @@ function DatetimeInput({
       <Field.ErrorText>{error}</Field.ErrorText>
     </Field.Root>
   );
+}
+
+function normalizeBbox(bbox: [number, number, number, number]) {
+  if (bbox[2] - bbox[0] >= 360) {
+    return [-180, bbox[1], 180, bbox[3]];
+  } else if (bbox[0] < -180) {
+    return normalizeBbox([bbox[0] + 360, bbox[1], bbox[2] + 360, bbox[3]]);
+  } else if (bbox[0] > 180) {
+    return normalizeBbox([bbox[0] - 360, bbox[1], bbox[2] - 360, bbox[3]]);
+  } else if (bbox[2] > 180) {
+    // Antimeridian-crossing
+    toaster.create({
+      type: "info",
+      title: "Viewport crosses the antimeridian",
+      description:
+        "The viewport crosses the antimeridian, and many STAC API servers do not support bounding boxes that cross +/- 180° longitude. We're narrowing the viewport to only search to only one side.",
+    });
+    if ((bbox[0] + bbox[2]) / 2 > 180) {
+      return [-180, bbox[1], bbox[2] - 360, bbox[3]];
+    } else {
+      return [bbox[0], bbox[1], 180, bbox[3]];
+    }
+  }
 }
