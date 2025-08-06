@@ -3,7 +3,7 @@
 [![CI status](https://img.shields.io/github/actions/workflow/status/developmentseed/stac-map/ci.yaml?style=for-the-badge&label=CI)](https://github.com/developmentseed/stac-map/actions/workflows/ci.yaml)
 [![Deploy status](https://img.shields.io/github/actions/workflow/status/developmentseed/stac-map/deploy.yaml?style=for-the-badge&label=Deploy)](https://github.com/developmentseed/stac-map/actions/workflows/deploy.yaml)
 
-The map-first STAC visualizer at <https://developmentseed.org/stac-map>.
+The map-first, single-page, statically-hosted STAC visualizer at <https://developmentseed.org/stac-map>.
 
 <!-- markdownlint-disable MD033 -->
 <picture>
