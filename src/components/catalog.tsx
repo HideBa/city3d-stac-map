@@ -1,13 +1,12 @@
-import { SkeletonText } from "@chakra-ui/react";
-import useStacMap from "../hooks/stac-map";
-import Collections from "./collections";
+import type { StacCatalog } from "stac-ts";
+import { ChildCard, Children } from "./children";
 
-export default function Catalog() {
-  const { collections } = useStacMap();
-
+export function Catalogs({ catalogs }: { catalogs: StacCatalog[] }) {
   return (
-    (collections && <Collections collections={collections}></Collections>) || (
-      <SkeletonText noOfLines={3}></SkeletonText>
-    )
+    <Children heading="Catalogs">
+      {catalogs.map((catalog) => (
+        <ChildCard child={catalog} key={"catalog-" + catalog.id}></ChildCard>
+      ))}
+    </Children>
   );
 }
