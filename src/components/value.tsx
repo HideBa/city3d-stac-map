@@ -194,7 +194,7 @@ function Breadcrumbs({ value }: { value: StacValue }) {
           </>
         )}
         <Breadcrumb.Item>
-          <Breadcrumb.CurrentLink>
+          <Breadcrumb.CurrentLink fontWeight={"bolder"} fontSize={"large"}>
             {(value.title as string) ?? value.id ?? ""}
           </Breadcrumb.CurrentLink>
         </Breadcrumb.Item>
