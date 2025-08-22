@@ -10,7 +10,6 @@ export async function fetchStac(
     method,
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json",
     },
     body,
   }).then((response) => {
