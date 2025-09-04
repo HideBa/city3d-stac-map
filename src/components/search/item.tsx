@@ -40,6 +40,12 @@ export default function ItemSearch({
   const [useViewportBounds, setUseViewportBounds] = useState(true);
   const { map } = useMap();
 
+  useEffect(() => {
+    if (!search) {
+      setItems(undefined);
+    }
+  }, [search, setItems]);
+
   const methods = createListCollection({
     items: links.map((link) => {
       return {
@@ -144,10 +150,7 @@ export default function ItemSearch({
         <Results
           search={search}
           link={link}
-          doClear={() => {
-            setSearch(undefined);
-            setItems(undefined);
-          }}
+          doClear={() => setSearch(undefined)}
         ></Results>
       )}
     </Stack>

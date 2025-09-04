@@ -57,21 +57,11 @@ export function StacMapProvider({ children }: { children: ReactNode }) {
   }, [fileUpload.acceptedFiles]);
 
   useEffect(() => {
-    // controls when to clear search items
-    const shouldClearSearch =
-      value?.type === "Catalog" ||
-      (value?.type === "Collection" &&
-        searchItems &&
-        searchItems.length > 0 &&
-        searchItems[0].collection !== value.id);
-
-    if (shouldClearSearch) {
-      setSearchItems(undefined);
-    }
+    setSearchItems(undefined);
     setPicked(undefined);
     setStacGeoparquetItemId(undefined);
     setTemporalFilter(undefined);
-  }, [value, setStacGeoparquetItemId, searchItems]);
+  }, [value, setStacGeoparquetItemId]);
 
   useEffect(() => {
     setPicked(stacGeoparquetItem);
