@@ -72,7 +72,7 @@ jobs:
       - name: Get app version
         run: echo "VITE_APP_VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))" >> $GITHUB_ENV
       - name: Get current datetime
-        run: echo "VITE_APP_DEPLOY_DATETIME=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
+        run: echo "VITE_APP_DEPLOY_DATETIME=$(date +'%Y-%m-%dT%H:%M:%S')Z" >> $GITHUB_ENV
       - name: Build
         run: yarn build
         env:
