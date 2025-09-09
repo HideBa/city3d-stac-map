@@ -1,7 +1,7 @@
 # stac-map
 
 [![CI status](https://img.shields.io/github/actions/workflow/status/developmentseed/stac-map/ci.yaml?style=for-the-badge&label=CI)](https://github.com/developmentseed/stac-map/actions/workflows/ci.yaml)
-[![Deploy status](https://img.shields.io/github/actions/workflow/status/developmentseed/stac-map/deploy.yaml?style=for-the-badge&label=Deploy)](https://github.com/developmentseed/stac-map/actions/workflows/deploy.yaml)
+[![GitHub deployments](https://img.shields.io/github/deployments/developmentseed/stac-map/github-pages?style=for-the-badge&label=Deploy)](https://github.com/developmentseed/stac-map/deployments/github-pages)
 [![GitHub Release](https://img.shields.io/github/v/release/developmentseed/stac-map?style=for-the-badge)](https://github.com/developmentseed/stac-map/releases)
 
 The map-first, single-page, statically-hosted STAC visualizer at <https://developmentseed.org/stac-map>.
