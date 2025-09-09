@@ -63,6 +63,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Install
         run: yarn install
       - id: setup_pages
