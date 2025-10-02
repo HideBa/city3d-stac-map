@@ -1,8 +1,4 @@
-import { Badge, Menu, Portal, Span } from "@chakra-ui/react";
-import { type ReactNode } from "react";
-import type { SetHref } from "./types/app";
-
-const EXAMPLES = [
+export const EXAMPLES = [
   { title: "eoAPI DevSeed", badge: "API", href: "https://stac.eoapi.dev/" },
   {
     title: "Microsoft Planetary Computer",
@@ -35,30 +31,3 @@ const EXAMPLES = [
     href: "https://raw.githubusercontent.com/radiantearth/stac-spec/refs/heads/master/examples/simple-item.json",
   },
 ];
-
-export function Examples({
-  setHref,
-  children,
-}: {
-  setHref: SetHref;
-  children: ReactNode;
-}) {
-  return (
-    <Menu.Root onSelect={(details) => setHref(details.value)}>
-      <Menu.Trigger asChild>{children}</Menu.Trigger>
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content>
-            {EXAMPLES.map(({ title, badge, href }, index) => (
-              <Menu.Item key={"example-" + index} value={href}>
-                {title}
-                <Span flex={1}></Span>
-                <Badge>{badge}</Badge>
-              </Menu.Item>
-            ))}
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
-  );
-}
