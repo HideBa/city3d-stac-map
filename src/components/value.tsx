@@ -161,7 +161,7 @@ export function Value({
           <Icon>{getValueIcon(value)}</Icon>
           {(value.title as string) ||
             value.id ||
-            href.split("/").at(-1)?.split("?").at(0)}
+            href.split("/").slice(-1)[0]?.split("?")[0]}
         </HStack>
       </Heading>
 
