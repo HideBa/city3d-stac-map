@@ -1,12 +1,11 @@
-import { type RefObject, useEffect, useMemo, useRef } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
   Map as MaplibreMap,
   type MapRef,
   useControl,
 } from "react-map-gl/maplibre";
 import { type DeckProps, Layer } from "@deck.gl/core";
-import { TileLayer } from "@deck.gl/geo-layers";
-import { BitmapLayer, GeoJsonLayer } from "@deck.gl/layers";
+import { GeoJsonLayer } from "@deck.gl/layers";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import {
   GeoArrowPolygonLayer,
@@ -16,6 +15,7 @@ import bbox from "@turf/bbox";
 import bboxPolygon from "@turf/bbox-polygon";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { SpatialExtent, StacCollection, StacItem } from "stac-ts";
+import { COGLayer } from "@developmentseed/deck.gl-geotiff";
 import type { BBox, Feature, FeatureCollection } from "geojson";
 import { useColorModeValue } from "../components/ui/color-mode";
 import type { GeoparquetTable } from "../hooks/stac-value";
@@ -35,7 +35,7 @@ export default function Map({
   setPicked,
   geoparquetTable,
   setStacGeoparquetItemId,
-  cogTileHref,
+  cogHref,
 }: {
   value: StacValue | undefined;
   collections: StacCollection[] | undefined;
@@ -48,9 +48,10 @@ export default function Map({
   setPicked: (picked: StacValue | undefined) => void;
   geoparquetTable: GeoparquetTable | undefined;
   setStacGeoparquetItemId: (id: string | undefined) => void;
-  cogTileHref: string | undefined;
+  cogHref: string | undefined;
 }) {
   const mapRef = useRef<MapRef>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const mapStyle = useColorModeValue(
     "positron-gl-style",
     "dark-matter-gl-style"
@@ -96,33 +97,11 @@ export default function Map({
 
   let layers: Layer[] = [];
 
-  if (cogTileHref)
+  if (cogHref)
     layers.push(
-      new TileLayer({
-        id: "cog-tiles",
-        extent: value && getBbox(value, collections),
-        maxRequests: 10,
-        data:
-          cogTileHref &&
-          `https://titiler.xyz/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=${cogTileHref}`,
-        renderSubLayers: (props) => {
-          const { boundingBox } = props.tile;
-          const { data, ...otherProps } = props;
-
-          if (data) {
-            return new BitmapLayer(otherProps, {
-              image: data,
-              bounds: [
-                boundingBox[0][0],
-                boundingBox[0][1],
-                boundingBox[1][0],
-                boundingBox[1][1],
-              ],
-            });
-          } else {
-            return null;
-          }
-        },
+      new COGLayer({
+        id: "cog-layer",
+        geotiff: cogHref,
       })
     );
   layers = [
@@ -160,7 +139,7 @@ export default function Map({
     new GeoJsonLayer({
       id: "value",
       data: valueGeoJson,
-      filled: !items && !cogTileHref,
+      filled: !items && !cogHref,
       getFillColor: collections ? inverseFillColor : fillColor,
       getLineColor: collections ? inverseLineColor : lineColor,
       getLineWidth: 2,
@@ -207,7 +186,7 @@ export default function Map({
   }
 
   useEffect(() => {
-    if (value && mapRef.current) {
+    if (value && mapRef.current && mapLoaded) {
       const padding = {
         top: window.innerHeight / 10,
         bottom: window.innerHeight / 20,
@@ -217,7 +196,7 @@ export default function Map({
       const bbox = getBbox(value, collections);
       if (bbox) mapRef.current.fitBounds(bbox, { linear: true, padding });
     }
-  }, [value, collections]);
+  }, [value, collections, mapLoaded]);
 
   return (
     <MaplibreMap
@@ -230,6 +209,7 @@ export default function Map({
       }}
       mapStyle={`https://basemaps.cartocdn.com/gl/${mapStyle}/style.json`}
       style={{ zIndex: 0 }}
+      onLoad={() => setMapLoaded(true)}
       onMoveEnd={() => {
         if (mapRef.current && !mapRef.current.isMoving())
           setBbox(sanitizeBbox(mapRef.current?.getBounds().toArray().flat()));
