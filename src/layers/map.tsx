@@ -8,16 +8,20 @@ import { type DeckProps, Layer } from "@deck.gl/core";
 import { TileLayer } from "@deck.gl/geo-layers";
 import { BitmapLayer, GeoJsonLayer } from "@deck.gl/layers";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { GeoArrowPolygonLayer } from "@geoarrow/deck.gl-layers";
+import {
+  GeoArrowPolygonLayer,
+  GeoArrowScatterplotLayer,
+} from "@geoarrow/deck.gl-layers";
 import bbox from "@turf/bbox";
 import bboxPolygon from "@turf/bbox-polygon";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Table } from "apache-arrow";
 import type { SpatialExtent, StacCollection, StacItem } from "stac-ts";
 import type { BBox, Feature, FeatureCollection } from "geojson";
 import { useColorModeValue } from "../components/ui/color-mode";
+import type { GeoparquetTable } from "../hooks/stac-value";
 import type { BBox2D, Color } from "../types/map";
 import type { StacValue } from "../types/stac";
+import { ValidGeometryType } from "../utils/stac-geoparquet";
 
 export default function Map({
   value,
@@ -29,7 +33,7 @@ export default function Map({
   setBbox,
   picked,
   setPicked,
-  table,
+  geoparquetTable,
   setStacGeoparquetItemId,
   cogTileHref,
 }: {
@@ -42,7 +46,7 @@ export default function Map({
   setBbox: (bbox: BBox2D | undefined) => void;
   picked: StacValue | undefined;
   setPicked: (picked: StacValue | undefined) => void;
-  table: Table | undefined;
+  geoparquetTable: GeoparquetTable | undefined;
   setStacGeoparquetItemId: (id: string | undefined) => void;
   cogTileHref: string | undefined;
 }) {
@@ -51,6 +55,8 @@ export default function Map({
     "positron-gl-style",
     "dark-matter-gl-style"
   );
+  const table = geoparquetTable?.table;
+  const geometryType = geoparquetTable?.geometryType;
   const valueGeoJson = useMemo(() => {
     if (value) {
       return valueToGeoJson(value);
@@ -119,7 +125,6 @@ export default function Map({
         },
       })
     );
-
   layers = [
     ...layers,
     new GeoJsonLayer({
@@ -166,23 +171,40 @@ export default function Map({
       },
     }),
   ];
-
-  if (table)
-    layers.push(
-      new GeoArrowPolygonLayer({
-        id: "table",
-        data: table,
-        filled: true,
-        getFillColor: fillColor,
-        getLineColor: lineColor,
-        getLineWidth: 2,
-        lineWidthUnits: "pixels",
-        pickable: true,
-        onClick: (info) => {
-          setStacGeoparquetItemId(table.getChild("id")?.get(info.index));
-        },
-      })
-    );
+  if (table) {
+    if (geometryType === ValidGeometryType.Polygon) {
+      layers.push(
+        new GeoArrowPolygonLayer({
+          id: "table-polygon",
+          data: table,
+          filled: true,
+          getFillColor: fillColor,
+          getLineColor: lineColor,
+          getLineWidth: 2,
+          lineWidthUnits: "pixels",
+          pickable: true,
+          onClick: (info) => {
+            setStacGeoparquetItemId(table.getChild("id")?.get(info.index));
+          },
+        })
+      );
+    } else if (geometryType === ValidGeometryType.Point) {
+      layers.push(
+        new GeoArrowScatterplotLayer({
+          id: "table-point",
+          data: table,
+          getColor: lineColor,
+          getRadius: 2,
+          getPosition: table.getChild("geometry")!,
+          radiusUnits: "pixels",
+          pickable: true,
+          onClick: (info) => {
+            setStacGeoparquetItemId(table.getChild("id")?.get(info.index));
+          },
+        })
+      );
+    }
+  }
 
   useEffect(() => {
     if (value && mapRef.current) {
