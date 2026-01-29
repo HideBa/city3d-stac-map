@@ -1,46 +1,16 @@
-import {
-  FileUpload,
-  Link,
-  Stack,
-  type UseFileUploadReturn,
-} from "@chakra-ui/react";
-import { Examples } from "./examples";
+import { Box, Link, Stack } from "@chakra-ui/react";
 
-export default function Introduction({
-  fileUpload,
-  setHref,
-}: {
-  fileUpload: UseFileUploadReturn;
-  setHref: (href: string | undefined) => void;
-}) {
+export default function Introduction() {
   return (
     <Stack fontSize={"sm"} fontWeight={"lighter"}>
-      <p>
+      <Box>
         <strong>stac-map</strong> is a map-first visualization tool for{" "}
         <Link variant={"underline"} href="https://stacspec.org">
           STAC
         </Link>
         .
-      </p>
-
-      <p>
-        To get started, use the text input,{" "}
-        <FileUpload.RootProvider
-          value={fileUpload}
-          as={"span"}
-          display={"inline"}
-        >
-          <FileUpload.Trigger asChild>
-            <Link>upload a file</Link>
-          </FileUpload.Trigger>
-        </FileUpload.RootProvider>
-        , or{" "}
-        <Examples setHref={setHref}>
-          <Link>load an example</Link>
-        </Examples>
-        .
-      </p>
-      <p>
+      </Box>
+      <Box>
         Questions, issues, or feature requests? Get in touch on{" "}
         <Link asChild>
           <a href="https://github.com/developmentseed/stac-map" target="_blank">
@@ -48,7 +18,7 @@ export default function Introduction({
           </a>
         </Link>
         .
-      </p>
+      </Box>
     </Stack>
   );
 }

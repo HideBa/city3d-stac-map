@@ -1,49 +1,83 @@
-import { type ReactNode } from "react";
-import { ErrorBoundary, getErrorMessage } from "react-error-boundary";
-import { type IconType } from "react-icons/lib";
-import { Accordion, Alert, HStack, Icon } from "@chakra-ui/react";
+import { Card, HStack, IconButton, SegmentGroup, Span } from "@chakra-ui/react";
+import { useState, type ReactNode } from "react";
+import { LuChevronDown, LuChevronUp, LuList, LuSquare } from "react-icons/lu";
 
-export default function Section({
-  title,
-  TitleIcon,
-  value,
-  children,
-}: {
+export type ListOrCard = "list" | "card";
+
+interface SectionProps {
+  icon: ReactNode;
   title: ReactNode;
-  TitleIcon: IconType;
-  value: string;
-  children: ReactNode;
-}) {
+  defaultListOrCard?: ListOrCard;
+  open?: boolean;
+  children: ReactNode | ((listOrCard: ListOrCard) => ReactNode);
+}
+
+export function Section({
+  icon,
+  title,
+  children,
+  defaultListOrCard = "card",
+  open = true,
+}: SectionProps) {
+  const [listOrCard, setListOrCard] = useState<ListOrCard>(defaultListOrCard);
+  const [isOpen, setIsOpen] = useState(open);
+  const showListOrCard = typeof children === "function";
+  const description = showListOrCard ? children(listOrCard) : children;
+
   return (
-    <Accordion.Item value={value}>
-      <Accordion.ItemTrigger>
-        <HStack flex={"1"}>
-          <Icon>
-            <TitleIcon />
-          </Icon>{" "}
-          {title}
-        </HStack>
-        <Accordion.ItemIndicator />
-      </Accordion.ItemTrigger>
-      <Accordion.ItemContent>
-        <Accordion.ItemBody>
-          <ErrorBoundary FallbackComponent={FallbackComponent}>
-            {children}
-          </ErrorBoundary>
-        </Accordion.ItemBody>
-      </Accordion.ItemContent>
-    </Accordion.Item>
+    <Card.Root size={"sm"} variant={"outline"}>
+      <Card.Body gap={4}>
+        <Card.Title
+          onClick={() => setIsOpen((isOpen) => !isOpen)}
+          cursor={"pointer"}
+        >
+          <HStack>
+            {icon}
+            {title}
+            <Span flex={1} />
+            {showListOrCard && (
+              <ListOrCardToggle
+                listOrCard={listOrCard}
+                setListOrCard={setListOrCard}
+              />
+            )}
+            <IconButton size={"2xs"} variant={"ghost"}>
+              {isOpen ? <LuChevronUp /> : <LuChevronDown />}
+            </IconButton>
+          </HStack>
+        </Card.Title>
+        <Card.Description
+          as={"div"}
+          display={isOpen ? "block" : "none"}
+          truncate
+        >
+          {description}
+        </Card.Description>
+      </Card.Body>
+    </Card.Root>
   );
 }
 
-function FallbackComponent({ error }: { error: unknown }) {
+function ListOrCardToggle({
+  listOrCard,
+  setListOrCard,
+}: {
+  listOrCard: ListOrCard;
+  setListOrCard: (listOrCard: ListOrCard) => void;
+}) {
   return (
-    <Alert.Root status={"error"}>
-      <Alert.Indicator />
-      <Alert.Content>
-        <Alert.Title>An error occurred during rendering</Alert.Title>
-        <Alert.Description>{getErrorMessage(error)}</Alert.Description>
-      </Alert.Content>
-    </Alert.Root>
+    <SegmentGroup.Root
+      value={listOrCard}
+      onValueChange={(e) => setListOrCard((e.value as ListOrCard) || "card")}
+      size={"xs"}
+    >
+      <SegmentGroup.Indicator />
+      <SegmentGroup.Items
+        items={[
+          { value: "list", label: <LuList /> },
+          { value: "card", label: <LuSquare /> },
+        ]}
+      />
+    </SegmentGroup.Root>
   );
 }

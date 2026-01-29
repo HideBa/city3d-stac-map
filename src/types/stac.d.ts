@@ -31,9 +31,32 @@ export interface NaturalLanguageCollectionSearchResult {
 export type StacAssets = { [k: string]: StacAsset };
 
 export interface StacSearch {
-  collections?: string[];
+  collections: string[];
+  bbox?: [number, number, number, number];
   datetime?: string;
-  bbox?: number[];
+  limit?: number;
 }
 
-export type DatetimeBounds = { start: Date; end: Date };
+export type DatetimeBounds = { start: Date | null; end: Date | null };
+
+type AssetWithAlternates = StacAsset & {
+  alternate?: { [key: string]: AlternateAsset };
+  bands?: Band[];
+  "eo:bands"?: Band[];
+};
+
+interface AlternateAsset {
+  href: string;
+  title?: string;
+}
+
+interface Band {
+  name?: string;
+  common_name?: string;
+  description?: string;
+}
+
+interface SignedItem extends StacItem {
+  bbox: BBox2D;
+  assets: { data: StacAsset };
+}

@@ -1,31 +1,16 @@
-import { MarkdownHooks } from "react-markdown";
-import { Card, Link, Stack, Text } from "@chakra-ui/react";
+import { useState } from "react";
 import type { StacCatalog } from "stac-ts";
+import ValueCard from "./value";
 
-export default function CatalogCard({
-  catalog,
-  setHref,
-}: {
-  catalog: StacCatalog;
-  setHref: (href: string | undefined) => void;
-}) {
-  const selfHref = catalog.links.find((link) => link.rel === "self")?.href;
+export default function CatalogCard({ catalog }: { catalog: StacCatalog }) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <Card.Root size={"sm"} variant={"elevated"}>
-      <Card.Body>
-        <Card.Title>
-          <Link onClick={() => selfHref && setHref(selfHref)}>
-            {catalog.title || catalog.id}
-          </Link>
-        </Card.Title>
-        <Card.Description as={"div"}>
-          <Stack>
-            <Text lineClamp={2} as={"div"}>
-              <MarkdownHooks>{catalog.description}</MarkdownHooks>
-            </Text>
-          </Stack>
-        </Card.Description>
-      </Card.Body>
-    </Card.Root>
+    <ValueCard
+      value={catalog}
+      isHovered={isHovered}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    />
   );
 }

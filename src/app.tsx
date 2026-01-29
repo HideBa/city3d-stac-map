@@ -1,100 +1,113 @@
-import { useEffect, useMemo, useState } from "react";
-import { Box, Container, FileUpload, useFileUpload } from "@chakra-ui/react";
-import type { StacCollection, StacItem } from "stac-ts";
-import { Toaster } from "./components/ui/toaster";
-import useHrefParam from "./hooks/href-param";
-import useStacChildren from "./hooks/stac-children";
-import useStacFilters from "./hooks/stac-filters";
-import useStacValue from "./hooks/stac-value";
-import Map from "./layers/map";
-import Overlay from "./layers/overlay";
-import type { BBox2D, Color } from "./types/map";
-import type { DatetimeBounds, StacValue } from "./types/stac";
-import getDateTimes from "./utils/datetimes";
-import { getCogHref } from "./utils/stac";
-import getDocumentTitle from "./utils/title";
+import { Alert, Box, FileUpload } from "@chakra-ui/react";
+import { useDuckDb } from "duckdb-wasm-kit";
+import { useEffect } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import Footer from "./components/footer";
+import Map from "./components/map";
+import Overlay from "./components/overlay";
+import { useStore } from "./store";
+import { getCurrentHref } from "./utils/href";
+import { uploadFile } from "./utils/upload";
 
-// TODO make this configurable by the user.
-const lineColor: Color = [207, 63, 2, 100];
-const fillColor: Color = [207, 63, 2, 50];
+function MapFallback({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    <Box
+      h="100%"
+      w="100%"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      bg="gray.100"
+    >
+      <Alert.Root status="error">
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title>Map failed to load</Alert.Title>
+          <Alert.Description>{message}</Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
+    </Box>
+  );
+}
+
+function OverlayFallback({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    <Box position="absolute" top={4} left={4}>
+      <Alert.Root status="error">
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title>Overlay failed to load</Alert.Title>
+          <Alert.Description>{message}</Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
+    </Box>
+  );
+}
 
 export default function App() {
-  // User state
-  const { href, setHref } = useHrefParam();
-  const fileUpload = useFileUpload({
-    maxFiles: 1,
-    onFileChange: (details) => {
-      if (details.acceptedFiles.length === 1) {
-        setHref(details.acceptedFiles[0].name);
+  const href = useStore((state) => state.href);
+  const setHref = useStore((state) => state.setHref);
+  const setUploadedFile = useStore((state) => state.setUploadedFile);
+  const setConnection = useStore((state) => state.setConnection);
+  const { db } = useDuckDb();
+
+  useEffect(() => {
+    if (href) {
+      history.pushState(null, "", "?href=" + href);
+      document.title = "stac-map | " + href;
+    } else {
+      history.pushState(null, "", location.pathname);
+      document.title = "stac-map";
+    }
+  }, [href]);
+
+  useEffect(() => {
+    function handlePopState() {
+      setHref(getCurrentHref() ?? "");
+    }
+    window.addEventListener("popstate", handlePopState);
+
+    if (getCurrentHref()) {
+      try {
+        new URL(getCurrentHref());
+      } catch {
+        history.pushState(null, "", location.pathname);
       }
-    },
-  });
-  const [userCollections, setCollections] = useState<StacCollection[]>();
-  const [userItems, setItems] = useState<StacItem[]>();
-  const [picked, setPicked] = useState<StacValue>();
-  const [bbox, setBbox] = useState<BBox2D>();
-  const [datetimeBounds, setDatetimeBounds] = useState<DatetimeBounds>();
-  const [filter, setFilter] = useState(true);
-  const [stacGeoparquetItemId, setStacGeoparquetItemId] = useState<string>();
-  const [cogHref, setcogHref] = useState<string>();
+    }
 
-  // Derived state
-  const {
-    value,
-    error,
-    items: linkedItems,
-    geoparqetTable,
-    stacGeoparquetItem,
-  } = useStacValue({
-    href,
-    fileUpload,
-    datetimeBounds: filter ? datetimeBounds : undefined,
-    stacGeoparquetItemId,
-  });
-  const collectionsLink = value?.links?.find((link) => link.rel === "data");
-  const { catalogs, collections: linkedCollections } = useStacChildren({
-    value,
-    enabled: !!value && !collectionsLink,
-  });
-  const collections = collectionsLink ? userCollections : linkedCollections;
-  const items = userItems || linkedItems;
-  const { filteredCollections, filteredItems } = useStacFilters({
-    collections,
-    items,
-    filter,
-    bbox,
-    datetimeBounds,
-  });
-
-  const datetimes = useMemo(
-    () => (value ? getDateTimes(value, items, collections) : null),
-    [value, items, collections]
-  );
-
-  // Effects
-  useEffect(() => {
-    document.title = getDocumentTitle(value);
-  }, [value]);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [setHref]);
 
   useEffect(() => {
-    setPicked(undefined);
-    setItems(undefined);
-    setDatetimeBounds(undefined);
-    setcogHref(value && getCogHref(value));
-  }, [value]);
-
-  useEffect(() => {
-    setcogHref(picked && getCogHref(picked));
-  }, [picked]);
-
-  useEffect(() => {
-    setPicked(stacGeoparquetItem);
-  }, [stacGeoparquetItem]);
+    if (db) {
+      (async () => {
+        const connection = await db.connect();
+        await connection.query("LOAD spatial;");
+        await connection.query("LOAD icu;");
+        setConnection(connection);
+      })();
+    }
+  }, [db, setConnection]);
 
   return (
     <>
       <Box h={"100dvh"}>
-        <FileUpload.RootProvider value={fileUpload} unstyled={true}>
+        <FileUpload.Root
+          unstyled={true}
+          onFileAccept={(details) => {
+            uploadFile({
+              file: details.files[0],
+              setUploadedFile,
+              db,
+            });
+          }}
+          disabled={!db}
+        >
+          <FileUpload.HiddenInput />
           <FileUpload.Dropzone
             disableClick={true}
             style={{
@@ -102,57 +115,16 @@ export default function App() {
               width: "100dvw",
             }}
           >
-            <Map
-              value={value}
-              geoparquetTable={geoparqetTable}
-              collections={collections}
-              filteredCollections={filteredCollections}
-              items={filteredItems}
-              fillColor={fillColor}
-              lineColor={lineColor}
-              setBbox={setBbox}
-              picked={picked}
-              setPicked={setPicked}
-              setStacGeoparquetItemId={setStacGeoparquetItemId}
-              cogHref={cogHref}
-            ></Map>
+            <ErrorBoundary FallbackComponent={MapFallback}>
+              <Map />
+            </ErrorBoundary>
           </FileUpload.Dropzone>
-        </FileUpload.RootProvider>
+        </FileUpload.Root>
       </Box>
-      <Container
-        zIndex={1}
-        fluid
-        h="100dvh"
-        pointerEvents={"none"}
-        position={"absolute"}
-        top={0}
-        left={0}
-        pt={4}
-      >
-        <Overlay
-          href={href}
-          setHref={setHref}
-          fileUpload={fileUpload}
-          value={value}
-          error={error}
-          catalogs={catalogs}
-          setCollections={setCollections}
-          collections={filteredCollections}
-          totalNumOfCollections={collections?.length}
-          filter={filter}
-          setFilter={setFilter}
-          bbox={bbox}
-          setPicked={setPicked}
-          picked={picked}
-          items={filteredItems}
-          setItems={setItems}
-          setDatetimeBounds={setDatetimeBounds}
-          cogHref={cogHref}
-          setcogHref={setcogHref}
-          datetimes={datetimes}
-        ></Overlay>
-      </Container>
-      <Toaster></Toaster>
+      <ErrorBoundary FallbackComponent={OverlayFallback}>
+        <Overlay />
+      </ErrorBoundary>
+      <Footer />
     </>
   );
 }

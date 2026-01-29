@@ -1,50 +1,23 @@
-import { MarkdownHooks } from "react-markdown";
-import { Card, Link, Stack, Text } from "@chakra-ui/react";
+import { useStore } from "@/store";
 import type { StacCollection } from "stac-ts";
-import { SpatialExtent, TemporalExtent } from "../extent";
+import ValueCard from "./value";
 
 export default function CollectionCard({
   collection,
-  setHref,
-  footer,
 }: {
   collection: StacCollection;
-  setHref: (href: string | undefined) => void;
-  footer?: string;
 }) {
-  const selfHref = collection.links.find((link) => link.rel === "self")?.href;
-  return (
-    <Card.Root size={"sm"} variant={"elevated"}>
-      <Card.Body>
-        <Card.Title>
-          <Link onClick={() => selfHref && setHref(selfHref)}>
-            {collection.title || collection.id}
-          </Link>
-        </Card.Title>
-        <Card.Description as={"div"}>
-          <Stack>
-            <Text lineClamp={2} as={"div"}>
-              <MarkdownHooks>{collection.description}</MarkdownHooks>
-            </Text>
+  const hoveredCollection = useStore((store) => store.hoveredCollection);
+  const setHoveredCollection = useStore((store) => store.setHoveredCollection);
 
-            {collection.extent?.temporal?.interval && (
-              <TemporalExtent
-                interval={collection.extent.temporal.interval[0]}
-              ></TemporalExtent>
-            )}
-            {collection.extent?.spatial?.bbox && (
-              <SpatialExtent
-                bbox={collection.extent.spatial.bbox[0]}
-              ></SpatialExtent>
-            )}
-          </Stack>
-        </Card.Description>
-      </Card.Body>
-      {footer && (
-        <Card.Footer fontWeight={"lighter"} fontSize={"sm"}>
-          {footer}
-        </Card.Footer>
-      )}
-    </Card.Root>
+  return (
+    <ValueCard
+      value={collection}
+      isHovered={collection.id === hoveredCollection?.id}
+      onMouseEnter={() => setHoveredCollection(collection)}
+      onMouseLeave={() => {
+        if (hoveredCollection?.id === collection.id) setHoveredCollection(null);
+      }}
+    />
   );
 }

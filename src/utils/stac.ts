@@ -1,38 +1,81 @@
-import type { UseFileUploadReturn } from "@chakra-ui/react";
-import type { StacAsset, StacCollection, StacItem, StacLink } from "stac-ts";
+import bbox from "@turf/bbox";
+import bboxPolygon from "@turf/bbox-polygon";
+import type { FeatureCollection } from "geojson";
+import type {
+  SpatialExtent,
+  StacAsset,
+  StacCollection,
+  StacItem,
+  StacLink,
+} from "stac-ts";
 import type { BBox2D } from "../types/map";
-import type { DatetimeBounds, StacAssets, StacValue } from "../types/stac";
+import type { AssetWithAlternates, StacAssets, StacValue } from "../types/stac";
+import { sanitizeBbox } from "./bbox";
+import { toAbsoluteUrl } from "./href";
 
-export async function getStacJsonValue(
-  href: string,
-  fileUpload?: UseFileUploadReturn
-): Promise<StacValue> {
-  let url;
-  try {
-    url = new URL(href);
-  } catch {
-    if (fileUpload) {
-      return getStacJsonValueFromUpload(fileUpload);
-    } else {
-      throw new Error(
-        `Cannot get STAC JSON value from href=${href} without a fileUpload`
-      );
-    }
+export function getStacValueTitle(value: StacValue) {
+  if ("title" in value && value.title) {
+    return value.title as string;
   }
-  return await fetchStac(url);
+  return getStacValueId(value);
 }
 
-async function getStacJsonValueFromUpload(fileUpload: UseFileUploadReturn) {
-  // We assume there's one and only on file.
-  const file = fileUpload.acceptedFiles[0];
-  return JSON.parse(await file.text());
+export function getStacValueId(value: StacValue) {
+  if ("id" in value && value.id) {
+    return value.id;
+  }
+  return getStacValueType(value);
 }
 
-export async function fetchStac(
-  href: string | URL,
-  method: "GET" | "POST" = "GET",
-  body?: string
-): Promise<StacValue> {
+export function getStacValueType(value: StacValue) {
+  switch (value.type) {
+    case "Collection":
+      return "Collection";
+    case "Feature":
+      return "Item";
+    case "Catalog":
+      return "Catalog";
+    case "FeatureCollection":
+      return "Item collection";
+    default:
+      return "unknown";
+  }
+}
+
+export function getLink(
+  value: { links?: Array<StacLink> },
+  rel: string
+): StacLink | undefined {
+  return value.links?.find((link) => link.rel === rel);
+}
+
+export function getLinkHref(
+  value: { links?: Array<StacLink> },
+  rel: string
+): string | undefined {
+  return getLink(value, rel)?.href;
+}
+
+export function getSelfHref(value: StacValue) {
+  return getLinkHref(value, "self");
+}
+
+export function getThumbnailAsset(value: StacValue) {
+  if ("assets" in value) {
+    const asset = (value.assets as { [key: string]: StacAsset })["thumbnail"];
+    return asset?.href.startsWith("http") && asset;
+  }
+}
+
+export async function fetchStac({
+  href,
+  method = "GET",
+  body,
+}: {
+  href: string | URL;
+  method?: "GET" | "POST";
+  body?: string;
+}): Promise<StacValue> {
   return await fetch(href, {
     method,
     headers: {
@@ -43,10 +86,9 @@ export async function fetchStac(
     if (response.ok) {
       return response
         .json()
-        .then((json) => makeHrefsAbsolute(json, href.toString()))
-        .then((json) => maybeAddTypeField(json));
+        .then((json) => makeHrefsAbsolute(json, href.toString()));
     } else {
-      throw new Error(`${method} ${href}: ${response.statusText}`);
+      throw new Error(`GET ${href}: ${response.statusText}`);
     }
   });
 }
@@ -82,62 +124,16 @@ export function makeHrefsAbsolute<T extends StacValue>(
   return value;
 }
 
-export function toAbsoluteUrl(href: string, baseUrl: URL): string {
-  if (isAbsolute(href)) return href;
-
-  const targetUrl = new URL(href, baseUrl);
-
-  if (targetUrl.protocol === "http:" || targetUrl.protocol === "https:") {
-    return targetUrl.toString();
-  } else if (targetUrl.protocol === "s3:") {
-    return decodeURI(targetUrl.toString());
-  } else {
-    return targetUrl.toString();
-  }
-}
-
-function isAbsolute(url: string) {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// eslint-disable-next-line
-function maybeAddTypeField(value: any) {
-  if (!value.type) {
-    if (value.features && Array.isArray(value.features)) {
-      value.type = "FeatureCollection";
-    } else if (value.extent) {
-      value.type = "Collection";
-    } else if (value.geometry && value.properties) {
-      value.type = "Feature";
-    } else if (value.stac_version) {
-      value.type = "Catalog";
-    }
-  }
-  return value;
-}
-
-export function getItemDatetimes(item: StacItem) {
-  const start = item.properties?.start_datetime
-    ? new Date(item.properties.start_datetime)
-    : item.properties?.datetime
-      ? new Date(item.properties.datetime)
-      : null;
-  const end = item.properties?.end_datetime
-    ? new Date(item.properties.end_datetime)
-    : item.properties?.datetime
-      ? new Date(item.properties.datetime)
-      : null;
-  return { start, end };
-}
-
-export function isCollectionInBbox(collection: StacCollection, bbox: BBox2D) {
+export function isCollectionInBbox(
+  collection: StacCollection,
+  bbox: BBox2D,
+  includeGlobalCollections: boolean
+) {
   if (bbox[2] - bbox[0] >= 360) {
     // A global bbox always contains every collection
+    return true;
+  } else if (includeGlobalCollections && isGlobalCollection(collection)) {
+    // A global collection is always there
     return true;
   }
   const collectionBbox = collection?.extent?.spatial?.bbox?.[0];
@@ -161,110 +157,192 @@ export function isCollectionInBbox(collection: StacCollection, bbox: BBox2D) {
   }
 }
 
-export function isCollectionInDatetimeBounds(
-  collection: StacCollection,
-  bounds: DatetimeBounds
-) {
-  const interval = collection.extent.temporal.interval[0];
-  const start = interval[0] ? new Date(interval[0]) : null;
-  const end = interval[1] ? new Date(interval[1]) : null;
-  return !((end && end < bounds.start) || (start && start > bounds.end));
+export function isGlobalCollection(collection: StacCollection) {
+  const bbox = getCollectionExtents(collection);
+  return isGlobalBbox(bbox);
 }
 
-export function isItemInBbox(item: StacItem, bbox: BBox2D) {
-  if (bbox[2] - bbox[0] >= 360) {
-    // A global bbox always contains every item
-    return true;
-  }
-  const itemBbox = item.bbox;
-  if (itemBbox) {
-    return (
-      !(
-        itemBbox[0] < bbox[0] &&
-        itemBbox[1] < bbox[1] &&
-        itemBbox[2] > bbox[2] &&
-        itemBbox[3] > bbox[3]
-      ) &&
-      !(
-        itemBbox[0] > bbox[2] ||
-        itemBbox[1] > bbox[3] ||
-        itemBbox[2] < bbox[0] ||
-        itemBbox[3] < bbox[1]
-      )
-    );
-  } else {
-    return false;
-  }
-}
-
-export function isItemInDatetimeBounds(item: StacItem, bounds: DatetimeBounds) {
-  const datetimes = getItemDatetimes(item);
-  return !(
-    (datetimes.end && datetimes.end < bounds.start) ||
-    (datetimes.start && datetimes.start > bounds.end)
+export function isGlobalBbox(bbox: BBox2D | SpatialExtent) {
+  const sanitizedBbox = sanitizeBbox(bbox);
+  return (
+    sanitizedBbox[0] == -180 &&
+    sanitizedBbox[1] == -90 &&
+    sanitizedBbox[2] == 180 &&
+    sanitizedBbox[3] == 90
   );
 }
 
-export function deconstructStac(value: StacValue) {
-  if (value.type === "Feature") {
-    return {
-      links: value.links,
-      assets: value.assets as StacAssets | undefined,
-      properties: value.properties,
-    };
-  } else {
-    const { links, assets, ...properties } = value;
-    return {
-      links: links || [],
-      assets: assets as StacAssets | undefined,
-      properties,
-    };
-  }
+export function getCollectionExtents(
+  collection: StacCollection
+): SpatialExtent {
+  const spatialExtent = collection.extent?.spatial;
+  // check if bbox is a list of lists, otherwise its a single list of nums
+  return Array.isArray(spatialExtent?.bbox?.[0])
+    ? spatialExtent?.bbox[0]
+    : (spatialExtent?.bbox as unknown as SpatialExtent);
 }
 
-export function getImportantLinks(links: StacLink[]) {
-  let rootLink: StacLink | undefined = undefined;
-  let collectionsLink: StacLink | undefined = undefined;
-  let nextLink: StacLink | undefined = undefined;
-  let prevLink: StacLink | undefined = undefined;
-  const filteredLinks = [];
-  if (links) {
-    for (const link of links) {
-      switch (link.rel) {
-        case "root":
-          rootLink = link;
-          break;
-        case "data":
-          collectionsLink = link;
-          break;
-        case "next":
-          nextLink = link;
-          break;
-        case "previous":
-          prevLink = link;
-          break;
-      }
-      // We already show children and items in their own pane
-      if (link.rel !== "child" && link.rel !== "item") filteredLinks.push(link);
+export function conformsToFreeTextCollectionSearch(value: StacValue) {
+  if (value.type !== "Catalog" || !Array.isArray(value.conformsTo))
+    return false;
+
+  return !!(value.conformsTo as string[]).find((conformsTo) => {
+    const parts = conformsTo.split("/");
+    return (
+      parts[2] === "api.stacspec.org" &&
+      parts[4] === "collection-search#free-text"
+    );
+  });
+}
+
+export function getCollectionDatetimes(collection: StacCollection) {
+  const interval = collection.extent?.temporal?.interval[0];
+  return {
+    start: interval?.[0] ? new Date(interval[0]) : null,
+    end: interval?.[1] ? new Date(interval[1]) : null,
+  };
+}
+
+export function isCollectionInDatetimes(
+  collection: StacCollection,
+  start: Date,
+  end: Date
+) {
+  const { start: collectionStart, end: collectionEnd } =
+    getCollectionDatetimes(collection);
+
+  return !(
+    (collectionEnd && collectionEnd < start) ||
+    (collectionStart && collectionStart > end)
+  );
+}
+
+export function getGeotiffHref(asset: AssetWithAlternates): string | null {
+  if (!isGeotiff(asset)) {
+    return null;
+  }
+  let geotiffHref = null;
+  if (asset.href.startsWith("http")) {
+    geotiffHref = asset.href;
+  } else if (asset.alternate) {
+    const httpAlternate = Object.values(asset.alternate).find((alt) =>
+      alt.href.startsWith("http")
+    );
+    if (httpAlternate) {
+      geotiffHref = httpAlternate.href;
     }
   }
-  return { rootLink, collectionsLink, nextLink, prevLink, filteredLinks };
+  return geotiffHref;
 }
 
-export function isGeoTiff(asset: StacAsset) {
-  return asset.type?.startsWith("image/tiff; application=geotiff");
+export function isGeotiff(asset: AssetWithAlternates) {
+  if (!asset.type?.startsWith("image/tiff; application=geotiff")) {
+    return false;
+  }
+  if (!hasValidBandCount(asset)) {
+    return false;
+  }
+  return hasHttpHref(asset);
 }
 
-export function getCogHref(value: StacValue): string | undefined {
-  if (!value.assets) {
-    return undefined;
+function hasValidBandCount(asset: AssetWithAlternates): boolean {
+  const bandCount = getBandCount(asset);
+  if (bandCount === null) {
+    return true;
   }
+  return bandCount === 3 || bandCount === 4;
+}
 
-  for (const asset of Object.values(value.assets)) {
-    if (isGeoTiff(asset)) {
-      return asset.href as string;
-    }
+function hasHttpHref(asset: AssetWithAlternates): boolean {
+  if (asset.href.startsWith("http")) {
+    return true;
   }
+  if (asset.alternate) {
+    return Object.values(asset.alternate).some((alt) =>
+      alt.href.startsWith("http")
+    );
+  }
+  return false;
+}
 
-  return undefined;
+export function getBandCount(asset: AssetWithAlternates): number | null {
+  const bands = asset.bands || asset["eo:bands"];
+  return bands ? bands.length : null;
+}
+
+export function sortAssets(assets: StacAssets) {
+  return Object.entries(assets).sort(
+    ([, a], [, b]) =>
+      getAssetScore(b as AssetWithAlternates) -
+      getAssetScore(a as AssetWithAlternates)
+  );
+}
+
+export function getBestAssetFromSortedList(
+  sortedAssets: [string, AssetWithAlternates][]
+) {
+  const first = sortedAssets[0];
+  if (first && getAssetScore(first[1] as AssetWithAlternates) > 0) {
+    return first;
+  }
+  return [null, null];
+}
+
+export function getBestAsset(item: StacItem) {
+  const sortedAssets = sortAssets(item.assets);
+  return getBestAssetFromSortedList(sortedAssets);
+}
+
+export function getAssetScore(asset: AssetWithAlternates): number {
+  const geotiff = isGeotiff(asset);
+  if (!geotiff) return 0;
+
+  const hasVisualRole = asset.roles?.includes("visual") ?? false;
+  const bandCount = getBandCount(asset);
+  const hasThreeOrFourBands = bandCount === 3 || bandCount === 4;
+
+  let score = 1;
+  if (hasVisualRole) score += 2;
+  if (hasThreeOrFourBands) score += 1;
+
+  return score;
+}
+
+export function collectionToFeature(collection: StacCollection) {
+  const bbox = sanitizeBbox(getCollectionExtents(collection));
+  return bboxPolygon(bbox, {
+    id: collection.id,
+  });
+}
+
+export function getBbox(
+  value: StacValue,
+  collections: StacCollection[] | null
+): BBox2D | undefined {
+  switch (value.type) {
+    case "Catalog":
+      return (collections && getCollectionsBbox(collections)) || undefined;
+    case "Collection":
+      return sanitizeBbox(getCollectionExtents(value));
+    case "Feature":
+      return value.bbox && sanitizeBbox(value.bbox);
+    case "FeatureCollection":
+      return bbox(value as FeatureCollection) as BBox2D;
+  }
+}
+
+function getCollectionsBbox(collections: StacCollection[]) {
+  return sanitizeBbox(
+    collections
+      .map((collection) => getCollectionExtents(collection))
+      .filter((extents) => !!extents)
+      .reduce((accumulator, currentValue) => {
+        return [
+          Math.min(accumulator[0], currentValue[0]),
+          Math.min(accumulator[1], currentValue[1]),
+          Math.max(accumulator[2], currentValue[2]),
+          Math.max(accumulator[3], currentValue[3]),
+        ];
+      })
+  );
 }

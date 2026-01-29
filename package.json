@@ -1,6 +1,6 @@
 {
   "name": "stac-map",
-  "description": "A map-first, single-page, statically-hosted STAC search and visualization tool, with stac-geoparquet support",
+  "description": "A map-first single-page STAC search and visualization tool with stac-geoparquet support",
   "author": {
     "name": "Pete Gadomski",
     "email": "pete.gadomski@gmail.com"
@@ -9,6 +9,10 @@
     {
       "name": "Indraneel Purohit",
       "email": "indraneelpurohit@gmail.com"
+    },
+    {
+      "name": "Sandra Hoang",
+      "email": "sandrahoang686@gmail.com"
     }
   ],
   "homepage": "https://github.com/developmentseed/stac-map/",
@@ -33,13 +37,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@apidevtools/json-schema-ref-parser": "^15.2.2",
     "@chakra-ui/react": "^3.31.0",
     "@deck.gl/core": "^9.2.6",
-    "@deck.gl/geo-layers": "^9.2.6",
     "@deck.gl/layers": "^9.2.6",
     "@deck.gl/mapbox": "^9.2.6",
     "@developmentseed/deck.gl-geotiff": "^0.2.0",
-    "@developmentseed/deck.gl-raster": "^0.2.0",
+    "@devseed-ui/collecticons-chakra": "^4.0.0",
     "@duckdb/duckdb-wasm": "^1.32.0",
     "@emotion/react": "^11.13.5",
     "@geoarrow/deck.gl-layers": "^0.3.0",
@@ -52,6 +56,7 @@
     "apache-arrow": "^21.1.0",
     "deck.gl": "^9.2.6",
     "duckdb-wasm-kit": "^0.1.38",
+    "geotiff-geokeys-to-proj4": "^2024.4.13",
     "maplibre-gl": "^5.16.0",
     "next-themes": "^0.4.3",
     "react": "^19.2.4",
@@ -60,12 +65,13 @@
     "react-icons": "^5.5.0",
     "react-map-gl": "^8.1.0",
     "react-markdown": "^10.1.0",
+    "shiki": "^3.21.0",
     "stac-ts": "^1.0.4",
-    "stac-wasm": "^0.0.3"
+    "stac-wasm": "^0.0.3",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/geojson": "^7946.0.16",
     "@types/react": "^19.2.9",
     "@types/react-dom": "^19.1.2",
@@ -79,10 +85,12 @@
     "globals": "^17.1.0",
     "playwright": "^1.58.0",
     "prettier": "^3.8.1",
+    "prettier-plugin-organize-imports": "^4.1.0",
     "semantic-release": "^25.0.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.54.0",
     "vite": "^7.3.1",
+    "vite-plugin-node-polyfills": "^0.25.0",
     "vite-plugin-top-level-await": "^1.5.0",
     "vite-plugin-wasm": "^3.5.0",
     "vite-tsconfig-paths": "^6.0.5",
