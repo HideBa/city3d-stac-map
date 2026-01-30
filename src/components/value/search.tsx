@@ -25,6 +25,7 @@ import {
   LuCalendar,
   LuForward,
   LuFrame,
+  LuHash,
   LuLoader,
   LuPause,
   LuPlay,
@@ -42,6 +43,7 @@ interface Props {
 interface SetSearchParams {
   bbox?: [number, number, number, number];
   datetime?: string;
+  limit?: number;
 }
 
 export default function Search({ href, collection }: Props) {
@@ -102,7 +104,7 @@ export default function Search({ href, collection }: Props) {
           setSearch({ collections: [collection.id] });
           setFetchAll(false);
         }}
-        disabled={!search.bbox && !search.datetime}
+        disabled={!search.bbox && !search.datetime && !search.limit}
       >
         <LuX />
       </IconButton>
@@ -118,9 +120,17 @@ export default function Search({ href, collection }: Props) {
       <Stack gap={4}>
         <SearchControls
           collection={collection}
-          setSearch={(params: SetSearchParams) =>
-            setSearch({ ...search, collections: [collection.id], ...params })
-          }
+          setSearch={(params: SetSearchParams) => {
+            const merged = {
+              ...search,
+              collections: [collection.id],
+              ...params,
+            };
+            const filtered = Object.fromEntries(
+              Object.entries(merged).filter(([, v]) => v !== undefined)
+            ) as unknown as StacSearch;
+            setSearch(filtered);
+          }}
           {...result}
         />
         {numberMatched && (
@@ -159,6 +169,7 @@ function SearchControls({
           end={end}
           setDatetime={(datetime) => setSearch({ datetime })}
         />
+        <LimitPopover setLimit={(limit) => setSearch({ limit })} />
       </ButtonGroup>
     </Stack>
   );
@@ -273,6 +284,56 @@ function DatetimePopover({
                     </Alert.Content>
                   </Alert.Root>
                 )}
+              </Stack>
+            </Popover.Body>
+          </Popover.Content>
+        </Popover.Positioner>
+      </Portal>
+    </Popover.Root>
+  );
+}
+
+function LimitPopover({
+  setLimit,
+}: {
+  setLimit: (limit: number | undefined) => void;
+}) {
+  const [value, setValue] = useState("");
+
+  return (
+    <Popover.Root
+      onOpenChange={(e) => {
+        if (!e.open) setLimit(parseInt(value, 10) || undefined);
+      }}
+    >
+      <Popover.Trigger asChild>
+        <Button>
+          <LuHash />
+          Limit
+        </Button>
+      </Popover.Trigger>
+      <Portal>
+        <Popover.Positioner>
+          <Popover.Content>
+            <Popover.Arrow />
+            <Popover.Body>
+              <Stack gap={4}>
+                <HStack>
+                  <Text fontSize="sm" flex="1">
+                    Items per page
+                  </Text>
+                  <Input
+                    type="number"
+                    size="sm"
+                    width="80px"
+                    min={1}
+                    max={10000}
+                    value={value}
+                    onChange={(e) => {
+                      setValue(e.target.value);
+                    }}
+                  />
+                </HStack>
               </Stack>
             </Popover.Body>
           </Popover.Content>
