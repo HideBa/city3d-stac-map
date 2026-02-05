@@ -2,6 +2,7 @@ import { Section } from "@/components/section";
 import { useStacSearch } from "@/hooks/stac";
 import { useItems } from "@/hooks/store";
 import { useStore } from "@/store/index.ts";
+import { toSearchKey } from "@/store/items";
 import type { StacSearch } from "@/types/stac";
 import { paddedBbox } from "@/utils/bbox";
 import { getCollectionDatetimes } from "@/utils/stac";
@@ -47,22 +48,21 @@ interface SetSearchParams {
 }
 
 export default function Search({ href, collection }: Props) {
-  const search = useStore((store) => store.search);
-  const setSearch = useStore((store) => store.setSearch);
+  const searches = useStore((store) => store.searches);
+  const setSearchState = useStore((store) => store.setSearch);
   const setSearchedItems = useStore((store) => store.setSearchedItems);
-  const result = useStacSearch({ href, search });
   const setDatetimeBounds = useStore((store) => store.setDatetimeBounds);
-
   const [fetchAll, setFetchAll] = useState(false);
+
+  const searchKey = { href, collection };
+  const searchKeyString = toSearchKey(searchKey);
+  const search = searches[searchKeyString] || { collections: [collection.id] };
+  const setSearch = (s: StacSearch) => setSearchState(searchKey, s);
+  const result = useStacSearch({ href, search });
 
   const numberMatched = useMemo(() => {
     if (result.data) return result.data.pages.at(0)?.numberMatched;
   }, [result.data]);
-
-  useEffect(() => {
-    if (search.collections.at(0) !== collection.id)
-      setSearch({ collections: [collection.id] });
-  }, [collection, setSearch, search]);
 
   useEffect(() => {
     if (result.data)
