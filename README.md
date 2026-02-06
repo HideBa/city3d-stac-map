@@ -12,7 +12,6 @@ Includes:
 - Render collections via some web map services (see https://github.com/developmentseed/stac-map/issues/314 for which ones we haven't implemented yet)
 - [stac-geoparquet](https://github.com/radiantearth/stac-geoparquet-spec) visualization, upload, and export
 
-
 <!-- markdownlint-disable MD033 -->
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="img/stac-map-dark.png">
