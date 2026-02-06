@@ -6,18 +6,19 @@
 
 The map-first, single-page, statically-hosted STAC visualizer at <https://developmentseed.org/stac-map>.
 
+Includes:
+
+- Client-side COG rendering via [deck.gl-raster](https://github.com/developmentseed/deck.gl-raster)
+- Render collections via some web map services (see https://github.com/developmentseed/stac-map/issues/314 for which ones we haven't implemented yet)
+- [stac-geoparquet](https://github.com/radiantearth/stac-geoparquet-spec) visualization, upload, and export
+
+
 <!-- markdownlint-disable MD033 -->
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="img/stac-map-dark.png">
   <img alt="stac-map with eoAPI DevSeed loaded in " src="img/stac-map-light.png">
 </picture>
 <!-- markdownlint-enable MD033 -->
-
-Includes:
-
-- Client-side COG rendering via [deck.gl-raster](https://github.com/developmentseed/deck.gl-raster)
-- Render collections via some web map services (see https://github.com/developmentseed/stac-map/issues/314 for which ones we haven't implemented yet)
-- [stac-geoparquet](https://github.com/radiantearth/stac-geoparquet-spec) visualization, upload, and export
 
 ## Development
 
