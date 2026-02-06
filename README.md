@@ -16,6 +16,7 @@ The map-first, single-page, statically-hosted STAC visualizer at <https://develo
 Includes:
 
 - Client-side COG rendering via [deck.gl-raster](https://github.com/developmentseed/deck.gl-raster)
+- Render collections via web map services (currently only TileJSON is supported)
 - [stac-geoparquet](https://github.com/radiantearth/stac-geoparquet-spec) visualization, upload, and export
 
 ## Development
