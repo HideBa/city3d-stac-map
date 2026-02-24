@@ -24,6 +24,7 @@ import Items from "./value/items";
 import Links from "./value/links";
 import Properties from "./value/properties";
 import RootHref from "./value/root-href";
+import City3D from "./value/city3d";
 import StacGeoparquetHref from "./value/stac-geoparquet-href";
 
 export default function Value({ value }: { value: StacValue }) {
@@ -99,7 +100,10 @@ export default function Value({ value }: { value: StacValue }) {
         )}
         {catalogs && <Catalogs catalogs={catalogs} />}
         {value.type === "Feature" && (
-          <Properties properties={value.properties} />
+          <>
+            <City3D properties={value.properties} />
+            <Properties properties={value.properties} />
+          </>
         )}
         {hrefIsParquet &&
           href &&
