@@ -9,7 +9,7 @@ import {
 } from "@/utils/stac";
 import { Badge, Heading, HStack, Stack } from "@chakra-ui/react";
 import { useEffect, useMemo } from "react";
-import type { StacAsset } from "stac-ts";
+import type { StacAsset, StacCollection } from "stac-ts";
 import Collections from "./collections";
 import Thumbnail from "./ui/thumbnail";
 import Assets from "./value/assets";
@@ -104,6 +104,9 @@ export default function Value({ value }: { value: StacValue }) {
             <City3D properties={value.properties} />
             <Properties properties={value.properties} />
           </>
+        )}
+        {value.type === "Collection" && (
+          <City3D summaries={(value as StacCollection).summaries} />
         )}
         {hrefIsParquet &&
           href &&

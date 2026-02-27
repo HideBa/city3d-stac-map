@@ -28,7 +28,8 @@ import {
 } from "react-icons/lu";
 
 interface City3DProps {
-  properties: Record<string, unknown>;
+  properties?: Record<string, unknown>;
+  summaries?: Record<string, unknown>;
 }
 
 // Icon mapping for different city object types
@@ -69,8 +70,14 @@ const MEDIA_TYPE_INFO: Record<string, { icon: React.ReactElement; label: string 
   "application/vnd.citygml+xml": { icon: <LuFileJson />, label: "CityGML" },
 };
 
-export default function City3D({ properties }: City3DProps) {
-  const city3dProps = extractCity3DProperties(properties);
+export default function City3D({ properties, summaries }: City3DProps) {
+  // Extract from either item properties or collection summaries
+  const source = summaries || properties || {};
+  const isCollection = !!summaries;
+
+  const city3dProps = isCollection
+    ? extractCity3DSummaries(source)
+    : extractCity3DProperties(source);
 
   // Only render if we have at least one city3d property or projection info
   const hasCity3DData =
@@ -383,5 +390,87 @@ function extractCity3DProperties(
     wkt2: properties["proj:wkt2"] as string | undefined,
     projjson: properties["proj:projjson"] as object | undefined,
     mediaType: properties["city3d:media_type"] as string | undefined,
+  };
+}
+
+/**
+ * Extract City3D properties from STAC Collection summaries.
+ * Summaries can have different formats:
+ * - Arrays of values: { "city3d:lods": [1, 2, 3] }
+ * - Range objects: { "city3d:city_objects": { "minimum": 100, "maximum": 5000 } }
+ * - Array of arrays (for multi-value fields): { "city3d:lods": [[1, 2], [2, 3]] }
+ */
+function extractCity3DSummaries(
+  summaries: Record<string, unknown>
+): City3DProperties {
+  const getArrayValue = <T,>(key: string): T[] | undefined => {
+    const value = summaries[key];
+    if (Array.isArray(value)) {
+      // Flatten array of arrays if needed
+      return value.flat() as T[];
+    }
+    return undefined;
+  };
+
+  const getRangeValue = (
+    key: string
+  ): { min?: number; max?: number; total?: number } | undefined => {
+    const value = summaries[key];
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const range = value as { minimum?: number; maximum?: number };
+      return {
+        min: range.minimum,
+        max: range.maximum,
+      };
+    }
+    if (Array.isArray(value) && value.length === 2) {
+      // Some APIs return [min, max] arrays
+      return {
+        min: value[0] as number,
+        max: value[1] as number,
+      };
+    }
+    return undefined;
+  };
+
+  const getBooleanArray = (key: string): boolean | undefined => {
+    const value = summaries[key];
+    if (Array.isArray(value) && value.length > 0) {
+      // If any item has this feature, show it as available
+      return value.includes(true);
+    }
+    return undefined;
+  };
+
+  const getSingleValue = <T,>(key: string): T | undefined => {
+    const value = summaries[key];
+    if (Array.isArray(value) && value.length > 0) {
+      // Return first value or joined if multiple unique values
+      const unique = [...new Set(value)];
+      return unique.length === 1 ? (unique[0] as T) : (unique as T);
+    }
+    return value as T | undefined;
+  };
+
+  return {
+    version: getSingleValue<string>("city3d:version"),
+    cityObjects: getRangeValue("city3d:city_objects"),
+    lods: getArrayValue<number>("city3d:lods"),
+    coTypes: getArrayValue<string>("city3d:co_types"),
+    attributes: summaries["city3d:attributes"] as
+      | Array<{
+          name: string;
+          type: string;
+          description?: string;
+          required?: boolean;
+        }>
+      | undefined,
+    semanticSurfaces: getBooleanArray("city3d:semantic_surfaces"),
+    textures: getBooleanArray("city3d:textures"),
+    materials: getBooleanArray("city3d:materials"),
+    projCode: getSingleValue<string>("proj:code"),
+    wkt2: summaries["proj:wkt2"] as string | undefined,
+    projjson: summaries["proj:projjson"] as object | undefined,
+    mediaType: getSingleValue<string>("city3d:media_type"),
   };
 }
