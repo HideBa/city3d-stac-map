@@ -30,22 +30,30 @@ export function BasePanel({
 }) {
   return (
     <Box
-      bg={"bg.muted"}
+      bg={"bg.panel"}
       pointerEvents={"auto"}
-      rounded={4}
-      borderColor={"bg.emphasized"}
+      rounded={"xl"}
+      borderWidth={1}
+      borderColor={"border"}
+      css={{
+        backdropFilter: "blur(16px) saturate(180%)",
+        WebkitBackdropFilter: "blur(16px) saturate(180%)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.35)",
+      }}
     >
       <Box
         borderBottomWidth={1}
         borderColor={"border.subtle"}
-        py={2}
+        py={2.5}
         px={4}
-        fontWeight={"lighter"}
+        fontWeight={"medium"}
         fontSize={"sm"}
+        letterSpacing={"tight"}
+        color={"fg.muted"}
       >
         {header}
       </Box>
-      <Box p={4} overflow={"scroll"} maxH={"80dvh"}>
+      <Box p={4} overflow={"auto"} maxH={"80dvh"}>
         {children}
       </Box>
     </Box>

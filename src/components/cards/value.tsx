@@ -33,15 +33,23 @@ export default function ValueCard({
     <Card.Root
       size={"sm"}
       variant={"subtle"}
-      borderWidth={2}
-      borderColor={isHovered ? "colorPalette.solid" : "transparent"}
+      borderWidth={1}
+      borderColor={isHovered ? "rgba(249, 115, 22, 0.5)" : "border"}
+      bg={isHovered ? "rgba(249, 115, 22, 0.06)" : "bg.subtle"}
       cursor={"pointer"}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onClick={() => selfHref && setHref(selfHref)}
+      css={{
+        transition: "all 0.15s ease",
+        "&:hover": {
+          borderColor: "rgba(249, 115, 22, 0.4)",
+          bg: "rgba(249, 115, 22, 0.04)",
+        },
+      }}
     >
       <Card.Body gap={2}>
-        <Card.Title>{getStacValueTitle(value)}</Card.Title>
+        <Card.Title letterSpacing="tight">{getStacValueTitle(value)}</Card.Title>
         <Card.Description as="div">
           {thumbnailAsset && <Thumbnail asset={thumbnailAsset} />}
           {description && (

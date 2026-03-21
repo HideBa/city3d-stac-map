@@ -25,7 +25,6 @@ import {
   Source,
   useControl,
 } from "react-map-gl/maplibre";
-import { useColorModeValue } from "../components/ui/color-mode";
 import { useStore } from "../store";
 
 type Color = [number, number, number, number];
@@ -33,10 +32,7 @@ type Color = [number, number, number, number];
 export default function Map() {
   const mapRef = useRef<MapRef>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const mapStyle = useColorModeValue(
-    "positron-gl-style",
-    "dark-matter-gl-style"
-  );
+  const mapStyle = "dark-matter-gl-style";
   const projection = useStore((store) => store.projection);
   const value = useStore((store) => store.value);
   const collections = useStore((store) => store.collections);

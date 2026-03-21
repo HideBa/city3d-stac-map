@@ -10,10 +10,21 @@ export default function Footer() {
   return (
     <HStack
       position={"absolute"}
-      bottom={4}
-      left={8}
-      fontWeight={"lighter"}
-      fontSize={"small"}
+      bottom={3}
+      left={6}
+      fontWeight={"normal"}
+      fontSize={"xs"}
+      color={"fg.subtle"}
+      letterSpacing={"tight"}
+      css={{
+        "& a": {
+          color: "var(--chakra-colors-fg-muted)",
+          transition: "color 0.2s",
+        },
+        "& a:hover": {
+          color: "var(--chakra-colors-fg-default)",
+        },
+      }}
     >
       <Dialog.Root size={"xl"} scrollBehavior={"inside"}>
         <Dialog.Trigger asChild>

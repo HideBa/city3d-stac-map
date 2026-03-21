@@ -32,6 +32,41 @@ interface City3DProps {
   summaries?: Record<string, unknown>;
 }
 
+// Color scheme for city object type categories
+const CATEGORY_COLORS: Record<string, { bg: string; color: string; border: string }> = {
+  Buildings: { bg: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", border: "rgba(245, 158, 11, 0.3)" },
+  Infrastructure: { bg: "rgba(167, 139, 250, 0.15)", color: "#A78BFA", border: "rgba(167, 139, 250, 0.3)" },
+  Water: { bg: "rgba(56, 189, 248, 0.15)", color: "#38BDF8", border: "rgba(56, 189, 248, 0.3)" },
+  Vegetation: { bg: "rgba(52, 211, 153, 0.15)", color: "#34D399", border: "rgba(52, 211, 153, 0.3)" },
+  Terrain: { bg: "rgba(217, 119, 6, 0.15)", color: "#D97706", border: "rgba(217, 119, 6, 0.3)" },
+  Other: { bg: "rgba(148, 163, 184, 0.15)", color: "#94A3B8", border: "rgba(148, 163, 184, 0.3)" },
+};
+
+// Map each city object type to its category
+const TYPE_TO_CATEGORY: Record<string, string> = {
+  Building: "Buildings",
+  BuildingPart: "Buildings",
+  BuildingInstallation: "Buildings",
+  BuildingStorey: "Buildings",
+  BuildingRoom: "Buildings",
+  Bridge: "Infrastructure",
+  BridgePart: "Infrastructure",
+  Road: "Infrastructure",
+  Railway: "Infrastructure",
+  Tunnel: "Infrastructure",
+  TunnelPart: "Infrastructure",
+  TransportSquare: "Infrastructure",
+  WaterBody: "Water",
+  WaterSurface: "Water",
+  PlantCover: "Vegetation",
+  SolitaryVegetationObject: "Vegetation",
+  TINRelief: "Terrain",
+  LandUse: "Terrain",
+  CityFurniture: "Other",
+  CityObjectGroup: "Other",
+  GenericCityObject: "Other",
+};
+
 // Icon mapping for different city object types
 const CITY_OBJECT_ICONS: Record<string, React.ReactElement> = {
   Building: <LuBuilding />,
@@ -71,7 +106,6 @@ const MEDIA_TYPE_INFO: Record<string, { icon: React.ReactElement; label: string 
 };
 
 export default function City3D({ properties, summaries }: City3DProps) {
-  // Extract from either item properties or collection summaries
   const source = summaries || properties || {};
   const isCollection = !!summaries;
 
@@ -79,7 +113,6 @@ export default function City3D({ properties, summaries }: City3DProps) {
     ? extractCity3DSummaries(source)
     : extractCity3DProperties(source);
 
-  // Only render if we have at least one city3d property or projection info
   const hasCity3DData =
     city3dProps.version ||
     city3dProps.cityObjects ||
@@ -98,77 +131,84 @@ export default function City3D({ properties, summaries }: City3DProps) {
   return (
     <Section title="3D City Model" icon={<LuBuilding3D />} open={true}>
       <Stack gap={4}>
-        {city3dProps.version && (
-          <HStack>
-            <Text color="fg.muted" fontSize="sm" fontWeight="medium">
-              Version:
-            </Text>
-            <Span fontFamily="mono" fontSize="sm">
-              {city3dProps.version}
-            </Span>
-          </HStack>
-        )}
-
-        {city3dProps.projCode && (
-          <HStack>
-            <LuGlobe color="fg.muted" boxSize={4} />
-            <Text fontSize="sm">
-              <Span color="fg.muted">Projection:</Span>{" "}
-              <Link
-                href={`https://epsg.io/${city3dProps.projCode.replace(
-                  "EPSG:",
-                  ""
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {city3dProps.projCode}
-              </Link>
-            </Text>
-          </HStack>
-        )}
-
-        {city3dProps.mediaType && (
-          <HStack>
-            {MEDIA_TYPE_INFO[city3dProps.mediaType]?.icon || <LuFileJson />}
-            <Text fontSize="sm">
-              <Span color="fg.muted">Format:</Span>{" "}
-              {MEDIA_TYPE_INFO[city3dProps.mediaType]?.label ||
-                city3dProps.mediaType}
-            </Text>
-          </HStack>
-        )}
-
-        {city3dProps.cityObjects !== undefined && (
-          <HStack>
-            <LuTag color="fg.muted" boxSize={4} />
-            <Text fontSize="sm">
-              <Span color="fg.muted">City Objects:</Span>{" "}
-              {typeof city3dProps.cityObjects === "number" ? (
-                city3dProps.cityObjects.toLocaleString()
+        {/* Metadata row */}
+        <HStack flexWrap="wrap" gap={3}>
+          {city3dProps.version && (
+            <MetadataChip label="Version" value={city3dProps.version} />
+          )}
+          {city3dProps.projCode && (
+            <HStack gap={1.5} fontSize="sm">
+              <LuGlobe style={{ color: "#7D8590", flexShrink: 0 }} />
+              <Span color="fg.muted">CRS:</Span>
+              {typeof city3dProps.projCode === "string" ? (
+                <Link
+                  href={`https://epsg.io/${city3dProps.projCode.replace("EPSG:", "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  fontFamily="mono"
+                  fontSize="xs"
+                  color="#38BDF8"
+                  css={{ "&:hover": { color: "#7DD3FC" } }}
+                >
+                  {city3dProps.projCode}
+                </Link>
               ) : (
-                <CityObjectsStats stats={city3dProps.cityObjects} />
+                <Span fontFamily="mono" fontSize="xs">
+                  {(city3dProps.projCode as unknown as string[]).join(", ")}
+                </Span>
               )}
-            </Text>
+            </HStack>
+          )}
+          {city3dProps.mediaType && (
+            <HStack gap={1.5} fontSize="sm">
+              {MEDIA_TYPE_INFO[city3dProps.mediaType]?.icon || <LuFileJson />}
+              <Span color="fg.muted">Format:</Span>
+              <Span fontWeight="medium">
+                {MEDIA_TYPE_INFO[city3dProps.mediaType]?.label || city3dProps.mediaType}
+              </Span>
+            </HStack>
+          )}
+        </HStack>
+
+        {/* City Objects count */}
+        {city3dProps.cityObjects !== undefined && (
+          <HStack gap={1.5} fontSize="sm">
+            <LuTag style={{ color: "#7D8590", flexShrink: 0 }} />
+            <Span color="fg.muted">City Objects:</Span>
+            {typeof city3dProps.cityObjects === "number" ? (
+              <Span fontWeight="semibold" fontFamily="mono">
+                {city3dProps.cityObjects.toLocaleString()}
+              </Span>
+            ) : (
+              <CityObjectsStats stats={city3dProps.cityObjects} />
+            )}
           </HStack>
         )}
 
+        {/* Levels of Detail */}
         {city3dProps.lods && city3dProps.lods.length > 0 && (
           <Box>
-            <Text color="fg.muted" fontSize="sm" fontWeight="medium" mb={2}>
-              Levels of Detail:
+            <Text color="fg.muted" fontSize="xs" fontWeight="medium" mb={2} textTransform="uppercase" letterSpacing="wider">
+              Levels of Detail
             </Text>
             <HStack flexWrap="wrap" gap={2}>
               {city3dProps.lods.map((lod) => (
                 <Badge
                   key={lod}
-                  variant="surface"
                   size="sm"
                   display="flex"
                   alignItems="center"
                   gap={1}
+                  css={{
+                    background: "rgba(249, 115, 22, 0.12)",
+                    color: "#FB923C",
+                    borderWidth: "1px",
+                    borderColor: "rgba(249, 115, 22, 0.25)",
+                    fontFamily: "var(--chakra-fonts-mono)",
+                    fontWeight: 500,
+                  }}
                 >
-                  <LuLayers boxSize={3} />
+                  <LuLayers style={{ width: 12, height: 12 }} />
                   LoD {lod}
                 </Badge>
               ))}
@@ -176,47 +216,49 @@ export default function City3D({ properties, summaries }: City3DProps) {
           </Box>
         )}
 
+        {/* City Object Types */}
         {city3dProps.coTypes && city3dProps.coTypes.length > 0 && (
           <Box>
-            <Text color="fg.muted" fontSize="sm" fontWeight="medium" mb={2}>
-              City Object Types:
+            <Text color="fg.muted" fontSize="xs" fontWeight="medium" mb={2} textTransform="uppercase" letterSpacing="wider">
+              City Object Types
             </Text>
             <CityObjectTypesList types={city3dProps.coTypes} />
           </Box>
         )}
 
+        {/* Appearance Features */}
         {(city3dProps.semanticSurfaces !== undefined ||
           city3dProps.textures !== undefined ||
           city3dProps.materials !== undefined) && (
           <>
-            <Separator />
+            <Separator borderColor="border" />
             <Box>
-              <Text color="fg.muted" fontSize="sm" fontWeight="medium" mb={2}>
-                Appearance Features:
+              <Text color="fg.muted" fontSize="xs" fontWeight="medium" mb={2} textTransform="uppercase" letterSpacing="wider">
+                Appearance
               </Text>
-              <Stack gap={2}>
+              <HStack flexWrap="wrap" gap={2}>
                 {city3dProps.semanticSurfaces !== undefined && (
                   <FeatureBadge
-                    icon={<LuScanLine boxSize={3} />}
+                    icon={<LuScanLine style={{ width: 12, height: 12 }} />}
                     label="Semantic Surfaces"
                     value={city3dProps.semanticSurfaces}
                   />
                 )}
                 {city3dProps.textures !== undefined && (
                   <FeatureBadge
-                    icon={<LuText boxSize={3} />}
+                    icon={<LuText style={{ width: 12, height: 12 }} />}
                     label="Textures"
                     value={city3dProps.textures}
                   />
                 )}
                 {city3dProps.materials !== undefined && (
                   <FeatureBadge
-                    icon={<LuPalette boxSize={3} />}
+                    icon={<LuPalette style={{ width: 12, height: 12 }} />}
                     label="Materials"
                     value={city3dProps.materials}
                   />
                 )}
-              </Stack>
+              </HStack>
             </Box>
           </>
         )}
@@ -246,6 +288,17 @@ function LuBuilding3D() {
   );
 }
 
+function MetadataChip({ label, value }: { label: string; value: string }) {
+  return (
+    <HStack gap={1.5} fontSize="sm">
+      <Span color="fg.muted">{label}:</Span>
+      <Span fontFamily="mono" fontSize="xs" fontWeight="medium">
+        {value}
+      </Span>
+    </HStack>
+  );
+}
+
 function CityObjectsStats({
   stats,
 }: {
@@ -256,25 +309,36 @@ function CityObjectsStats({
   if (stats.max !== undefined) parts.push(`max: ${stats.max.toLocaleString()}`);
   if (stats.total !== undefined)
     parts.push(`total: ${stats.total.toLocaleString()}`);
-  return <Span fontSize="xs">{parts.join(", ")}</Span>;
+  return (
+    <Span fontSize="xs" fontFamily="mono" fontWeight="medium">
+      {parts.join(" / ")}
+    </Span>
+  );
 }
 
 function CityObjectTypesList({ types }: { types: string[] }) {
-  // Group types by category
   const building = types.filter((t) =>
     ["Building", "BuildingPart", "BuildingInstallation", "BuildingStorey", "BuildingRoom"].includes(t)
   );
   const infrastructure = types.filter((t) =>
     ["Bridge", "BridgePart", "Road", "Railway", "Tunnel", "TunnelPart", "TransportSquare"].includes(t)
   );
-  const environment = types.filter((t) =>
-    ["WaterBody", "WaterSurface", "PlantCover", "SolitaryVegetationObject", "TINRelief", "LandUse"].includes(t)
+  const water = types.filter((t) =>
+    ["WaterBody", "WaterSurface"].includes(t)
+  );
+  const vegetation = types.filter((t) =>
+    ["PlantCover", "SolitaryVegetationObject"].includes(t)
+  );
+  const terrain = types.filter((t) =>
+    ["TINRelief", "LandUse"].includes(t)
   );
   const other = types.filter(
     (t) =>
       !building.includes(t) &&
       !infrastructure.includes(t) &&
-      !environment.includes(t)
+      !water.includes(t) &&
+      !vegetation.includes(t) &&
+      !terrain.includes(t)
   );
 
   return (
@@ -285,8 +349,14 @@ function CityObjectTypesList({ types }: { types: string[] }) {
       {infrastructure.length > 0 && (
         <ObjectTypeGroup label="Infrastructure" types={infrastructure} />
       )}
-      {environment.length > 0 && (
-        <ObjectTypeGroup label="Environment" types={environment} />
+      {water.length > 0 && (
+        <ObjectTypeGroup label="Water" types={water} />
+      )}
+      {vegetation.length > 0 && (
+        <ObjectTypeGroup label="Vegetation" types={vegetation} />
+      )}
+      {terrain.length > 0 && (
+        <ObjectTypeGroup label="Terrain" types={terrain} />
       )}
       {other.length > 0 && <ObjectTypeGroup label="Other" types={other} />}
     </Stack>
@@ -294,37 +364,56 @@ function CityObjectTypesList({ types }: { types: string[] }) {
 }
 
 function ObjectTypeGroup({ label, types }: { label: string; types: string[] }) {
+  const colors = CATEGORY_COLORS[label] || CATEGORY_COLORS.Other;
   return (
     <Box>
-      <Text fontSize="xs" color="fg.muted" mb={1}>
+      <Text
+        fontSize="xs"
+        mb={1.5}
+        fontWeight="medium"
+        css={{ color: colors.color }}
+      >
         {label}
       </Text>
-      <HStack flexWrap="wrap" gap={1}>
-        {types.map((type) => (
-          <Badge
-            key={type}
-            variant="outline"
-            size="sm"
-            display="flex"
-            alignItems="center"
-            gap={1}
-            title={type}
-          >
-            {CITY_OBJECT_ICONS[type] || <LuPackage boxSize={3} />}
-            <Span fontSize="xs">{formatObjectType(type)}</Span>
-          </Badge>
-        ))}
+      <HStack flexWrap="wrap" gap={1.5}>
+        {types.map((type) => {
+          const category = TYPE_TO_CATEGORY[type] || "Other";
+          const catColors = CATEGORY_COLORS[category] || CATEGORY_COLORS.Other;
+          return (
+            <Badge
+              key={type}
+              size="sm"
+              display="flex"
+              alignItems="center"
+              gap={1}
+              title={type}
+              css={{
+                background: catColors.bg,
+                color: catColors.color,
+                borderWidth: "1px",
+                borderColor: catColors.border,
+                fontWeight: 500,
+                fontSize: "0.7rem",
+                transition: "all 0.15s",
+                "&:hover": {
+                  background: catColors.border,
+                },
+              }}
+            >
+              {CITY_OBJECT_ICONS[type] || <LuPackage style={{ width: 12, height: 12 }} />}
+              <Span>{formatObjectType(type)}</Span>
+            </Badge>
+          );
+        })}
       </HStack>
     </Box>
   );
 }
 
 function formatObjectType(type: string): string {
-  // Format long type names for display
   if (type.startsWith("+")) {
     return type.substring(1);
   }
-  // Remove common prefixes for cleaner display
   return type
     .replace("Building", "Bldg")
     .replace("Installation", "Inst.")
@@ -343,22 +432,30 @@ function FeatureBadge({
   value: boolean;
 }) {
   return (
-    <HStack>
-      <Badge
-        variant={value ? "solid" : "outline"}
-        colorPalette={value ? "green" : "gray"}
-        size="sm"
-        display="flex"
-        alignItems="center"
-        gap={1}
-      >
-        {icon}
-        {label}
-      </Badge>
-      <Span fontSize="xs" color={value ? "fg.muted" : "fg.subtle"}>
-        {value ? "Included" : "Not included"}
-      </Span>
-    </HStack>
+    <Badge
+      size="sm"
+      display="flex"
+      alignItems="center"
+      gap={1}
+      css={
+        value
+          ? {
+              background: "rgba(52, 211, 153, 0.12)",
+              color: "#34D399",
+              borderWidth: "1px",
+              borderColor: "rgba(52, 211, 153, 0.25)",
+            }
+          : {
+              background: "rgba(148, 163, 184, 0.08)",
+              color: "#64748B",
+              borderWidth: "1px",
+              borderColor: "rgba(148, 163, 184, 0.15)",
+            }
+      }
+    >
+      {icon}
+      {label}
+    </Badge>
   );
 }
 
@@ -406,7 +503,6 @@ function extractCity3DSummaries(
   const getArrayValue = <T,>(key: string): T[] | undefined => {
     const value = summaries[key];
     if (Array.isArray(value)) {
-      // Flatten array of arrays if needed
       return value.flat() as T[];
     }
     return undefined;
@@ -424,7 +520,6 @@ function extractCity3DSummaries(
       };
     }
     if (Array.isArray(value) && value.length === 2) {
-      // Some APIs return [min, max] arrays
       return {
         min: value[0] as number,
         max: value[1] as number,
@@ -436,7 +531,6 @@ function extractCity3DSummaries(
   const getBooleanArray = (key: string): boolean | undefined => {
     const value = summaries[key];
     if (Array.isArray(value) && value.length > 0) {
-      // If any item has this feature, show it as available
       return value.includes(true);
     }
     return undefined;
@@ -445,7 +539,6 @@ function extractCity3DSummaries(
   const getSingleValue = <T,>(key: string): T | undefined => {
     const value = summaries[key];
     if (Array.isArray(value) && value.length > 0) {
-      // Return first value or joined if multiple unique values
       const unique = [...new Set(value)];
       return unique.length === 1 ? (unique[0] as T) : (unique as T);
     }

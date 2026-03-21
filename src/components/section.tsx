@@ -27,11 +27,23 @@ export function Section({
   const description = showListOrCard ? children(listOrCard) : children;
 
   return (
-    <Card.Root size={"sm"} variant={"outline"}>
+    <Card.Root
+      size={"sm"}
+      variant={"outline"}
+      borderColor={"border"}
+      bg={"bg.subtle"}
+      css={{
+        transition: "border-color 0.2s",
+        "&:hover": {
+          borderColor: "rgba(255, 255, 255, 0.12)",
+        },
+      }}
+    >
       <Card.Body gap={4}>
         <Card.Title
           onClick={() => setIsOpen((isOpen) => !isOpen)}
           cursor={"pointer"}
+          letterSpacing={"tight"}
         >
           <HStack>
             {icon}

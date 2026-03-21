@@ -12,9 +12,10 @@ export default function Overlay() {
       position={"absolute"}
       top={0}
       left={0}
-      pt={4}
+      pt={3}
+      px={3}
     >
-      <SimpleGrid columns={3} gap={4}>
+      <SimpleGrid columns={3} gap={3}>
         <GridItem colSpan={1}>
           <Panel />
         </GridItem>

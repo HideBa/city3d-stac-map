@@ -39,7 +39,7 @@ export default function HrefInput() {
           >
             <FileUpload.HiddenInput />
             <FileUpload.Trigger asChild>
-              <IconButton variant={"plain"} size={"sm"} disabled={!db}>
+              <IconButton variant={"ghost"} size={"sm"} disabled={!db}>
                 <LuUpload />
               </IconButton>
             </FileUpload.Trigger>
@@ -47,10 +47,20 @@ export default function HrefInput() {
         }
       >
         <Input
-          bg={"bg.muted/90"}
+          bg={"bg.panel"}
+          borderColor={"border"}
           placeholder="Enter a url to a STAC API, JSON, or GeoParquet"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          size={"sm"}
+          css={{
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            "&::placeholder": {
+              color: "var(--chakra-colors-fg-subtle)",
+              fontSize: "0.8rem",
+            },
+          }}
         />
       </InputGroup>
     </Box>
