@@ -128,11 +128,13 @@ export function makeHrefsAbsolute<T extends StacValue>(
   }
   return value;
 }
+const COLLECTION_CONTAINS_VIEWPORT_MAX_ZOOM = 14;
 
 export function isCollectionInBbox(
   collection: StacCollection,
   bbox: BBox2D,
-  includeGlobalCollections: boolean
+  includeGlobalCollections: boolean,
+  zoom?: number | null
 ) {
   if (bbox[2] - bbox[0] >= 360) {
     // A global bbox always contains every collection
@@ -143,20 +145,22 @@ export function isCollectionInBbox(
   }
   const collectionBbox = collection?.extent?.spatial?.bbox?.[0];
   if (collectionBbox) {
-    return (
-      !(
-        collectionBbox[0] < bbox[0] &&
-        collectionBbox[1] < bbox[1] &&
-        collectionBbox[2] > bbox[2] &&
-        collectionBbox[3] > bbox[3]
-      ) &&
-      !(
-        collectionBbox[0] > bbox[2] ||
-        collectionBbox[1] > bbox[3] ||
-        collectionBbox[2] < bbox[0] ||
-        collectionBbox[3] < bbox[1]
-      )
-    );
+    const collectionContainsViewport =
+      collectionBbox[0] < bbox[0] &&
+      collectionBbox[1] < bbox[1] &&
+      collectionBbox[2] > bbox[2] &&
+      collectionBbox[3] > bbox[3];
+    const noOverlap =
+      collectionBbox[0] > bbox[2] ||
+      collectionBbox[1] > bbox[3] ||
+      collectionBbox[2] < bbox[0] ||
+      collectionBbox[3] < bbox[1];
+    if (noOverlap) return false;
+    // Keep collections visible when zoomed in below the threshold
+    if (collectionContainsViewport) {
+      return zoom != null && zoom < COLLECTION_CONTAINS_VIEWPORT_MAX_ZOOM;
+    }
+    return true;
   } else {
     return false;
   }

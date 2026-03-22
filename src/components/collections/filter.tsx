@@ -18,6 +18,7 @@ export default function Filter({
   collections: StacCollection[];
 }) {
   const bbox = useStore((store) => store.bbox);
+  const zoom = useStore((store) => store.zoom);
   const datetimeFilter = useStore((store) => store.datetimeFilter);
   const datetimeBounds = useStore((store) => store.datetimeBounds);
   const setFilteredCollections = useStore(
@@ -34,7 +35,7 @@ export default function Filter({
         (collection) =>
           matchesFilter(collection, searchValue) &&
           (!bbox ||
-            isCollectionInBbox(collection, bbox, includeGlobalCollections)) &&
+            isCollectionInBbox(collection, bbox, includeGlobalCollections, zoom)) &&
           (!datetimeFilter ||
             isCollectionInDatetimes(
               collection,
@@ -48,6 +49,7 @@ export default function Filter({
     setFilteredCollections,
     searchValue,
     bbox,
+    zoom,
     datetimeFilter,
     includeGlobalCollections,
   ]);

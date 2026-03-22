@@ -26,17 +26,22 @@ import {
   useControl,
 } from "react-map-gl/maplibre";
 import { useStore } from "../store";
+import { useColorModeValue } from "./ui/color-mode";
 
 type Color = [number, number, number, number];
 
 export default function Map() {
   const mapRef = useRef<MapRef>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const mapStyle = "dark-matter-gl-style";
+  const mapStyle = useColorModeValue(
+    "positron-gl-style",
+    "dark-matter-gl-style"
+  );
   const projection = useStore((store) => store.projection);
   const value = useStore((store) => store.value);
   const collections = useStore((store) => store.collections);
   const setBbox = useStore((store) => store.setBbox);
+  const setZoom = useStore((store) => store.setZoom);
   const cogHref = useStore((store) => store.cogHref);
   const cogSources = useStore((store) => store.cogSources);
   const pagedCogSources = useStore((store) => store.pagedCogSources);
@@ -284,6 +289,8 @@ export default function Map() {
           .flatMap((a) => a);
         const sanitizedBbox = bbox && sanitizeBbox(bbox);
         if (sanitizedBbox) setBbox(sanitizedBbox);
+        const zoom = mapRef?.current?.getZoom();
+        if (zoom !== undefined) setZoom(zoom);
       }}
     >
       {webMapLink && webMapLink.rel === "tilejson" && (

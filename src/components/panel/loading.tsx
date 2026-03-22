@@ -24,7 +24,7 @@ export function LoadingPanel({
         ? `Error loading ${href}`
         : isFetching
           ? `Fetching ${href}`
-          : "stac-map"}
+          : "STAC Map for 3D City Models"}
     </PanelHeader>
   );
 

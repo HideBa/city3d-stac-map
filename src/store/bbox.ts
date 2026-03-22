@@ -4,12 +4,16 @@ import type { BBox2D } from "../types/map";
 
 export interface BboxState {
   bbox: BBox2D | null;
+  zoom: number | null;
   setBbox: (bbox: BBox2D) => void;
+  setZoom: (zoom: number) => void;
 }
 
 export const createBboxSlice: StateCreator<State, [], [], BboxState> = (
   set
 ) => ({
   bbox: null,
+  zoom: null,
   setBbox: (bbox) => set({ bbox }),
+  setZoom: (zoom) => set({ zoom }),
 });

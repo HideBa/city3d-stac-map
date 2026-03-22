@@ -56,7 +56,7 @@ export default function Value({ value }: { value: StacValue }) {
   }, [value]);
 
   useEffect(() => {
-    document.title = "stac-map | " + getStacValueTitle(value);
+    document.title = "STAC Map for 3D City Models | " + getStacValueTitle(value);
   }, [value]);
 
   useEffect(() => {

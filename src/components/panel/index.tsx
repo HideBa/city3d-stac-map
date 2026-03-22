@@ -32,7 +32,7 @@ export default function Panel() {
     );
   } else {
     return (
-      <BasePanel header="stac-map">
+      <BasePanel header="STAC Map for 3D City Models">
         <Introduction />
       </BasePanel>
     );
