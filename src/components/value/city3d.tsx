@@ -8,7 +8,7 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import type { City3DProperties } from "@/types/stac";
+import type { AttributeDefinition, City3DProperties } from "@/types/stac";
 import { Section } from "../section";
 import {
   LuBuilding,
@@ -471,12 +471,7 @@ function extractCity3DProperties(
     lods: properties["city3d:lods"] as number[] | undefined,
     coTypes: properties["city3d:co_types"] as string[] | undefined,
     attributes: properties["city3d:attributes"] as
-      | Array<{
-          name: string;
-          type: string;
-          description?: string;
-          required?: boolean;
-        }>
+      | AttributeDefinition[]
       | undefined,
     semanticSurfaces: properties["city3d:semantic_surfaces"] as
       | boolean
@@ -551,12 +546,7 @@ function extractCity3DSummaries(
     lods: getArrayValue<number>("city3d:lods"),
     coTypes: getArrayValue<string>("city3d:co_types"),
     attributes: summaries["city3d:attributes"] as
-      | Array<{
-          name: string;
-          type: string;
-          description?: string;
-          required?: boolean;
-        }>
+      | AttributeDefinition[]
       | undefined,
     semanticSurfaces: getBooleanArray("city3d:semantic_surfaces"),
     textures: getBooleanArray("city3d:textures"),

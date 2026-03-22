@@ -63,24 +63,20 @@ interface SignedItem extends StacItem {
 
 // STAC 3D City Model Extension types
 // See: https://github.com/cityjson/stac-city3d
+// Internal representation after extracting city3d:* fields from STAC properties/summaries
 export interface City3DProperties {
-  "city3d:version"?: string;
-  "city3d:city_objects"?: number | CityObjectsStatistics;
-  "city3d:lods"?: number[];
-  "city3d:co_types"?: string[];
-  "city3d:attributes"?: AttributeDefinition[];
-  "city3d:semantic_surfaces"?: boolean;
-  "city3d:textures"?: boolean;
-  "city3d:materials"?: boolean;
-  // Projection extension fields (often used with city3d)
-  "proj:code"?: string;
-  "proj:wkt2"?: string;
-  "proj:projjson"?: object;
-  "proj:geometry"?: object;
-  "proj:bbox"?: number[];
-  "proj:centroid"?: { lat: number; lon: number };
-  // Asset media types for city models
-  "city3d:media_type"?: string;
+  version?: string;
+  cityObjects?: number | CityObjectsStatistics;
+  lods?: number[];
+  coTypes?: string[];
+  attributes?: AttributeDefinition[];
+  semanticSurfaces?: boolean;
+  textures?: boolean;
+  materials?: boolean;
+  projCode?: string | string[];
+  wkt2?: string;
+  projjson?: object;
+  mediaType?: string;
 }
 
 export interface CityObjectsStatistics {
