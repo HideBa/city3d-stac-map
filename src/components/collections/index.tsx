@@ -106,7 +106,11 @@ export default function Collections({
                   </Popover.Trigger>
                   <Portal>
                     <Popover.Positioner>
-                      <Popover.Content>
+                      <Popover.Content
+                        maxH="80vh"
+                        overflowY="auto"
+                        minW="320px"
+                      >
                         <Popover.Arrow />
                         <Popover.Body>
                           <Filter collections={collections} />
