@@ -32,6 +32,8 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Build
         run: yarn build
+        env:
+          VITE_DEFAULT_HREF: https://storage.googleapis.com/city3d-stac/catalog.json
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
