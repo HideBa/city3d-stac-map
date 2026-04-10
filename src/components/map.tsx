@@ -27,6 +27,7 @@ import {
 } from "react-map-gl/maplibre";
 import { useStore } from "../store";
 import { useColorModeValue } from "./ui/color-mode";
+import ItemsNotice from "./items-notice";
 
 type Color = [number, number, number, number];
 
@@ -275,55 +276,58 @@ export default function Map() {
     );
 
   return (
-    <MaplibreMap
-      id="map"
-      ref={mapRef}
-      initialViewState={{
-        longitude: 0,
-        latitude: 0,
-        zoom: 1,
-      }}
-      projection={projection}
-      mapStyle={`https://basemaps.cartocdn.com/gl/${mapStyle}/style.json`}
-      style={{ zIndex: 0 }}
-      onLoad={() => setIsLoaded(true)}
-      onMoveEnd={() => {
-        const bbox = mapRef?.current
-          ?.getBounds()
-          .toArray()
-          .flatMap((a) => a);
-        const sanitizedBbox = bbox && sanitizeBbox(bbox);
-        if (sanitizedBbox) setBbox(sanitizedBbox);
-        const zoom = mapRef?.current?.getZoom();
-        if (zoom !== undefined) setZoom(zoom);
-      }}
-    >
-      {webMapLink && webMapLink.rel === "tilejson" && (
-        <Source
-          key={webMapLink.href}
-          id="web-map-link-tilejson"
-          type="raster"
-          url={webMapLink.href}
-        >
-          <MaplibreLayer id="web-map-link-layer-tilejson" type="raster" />
-        </Source>
-      )}
-      {webMapLink && webMapLink.rel === "wmts" && wmtsTileUrl && (
-        <Source
-          key={wmtsTileUrl}
-          id="web-map-link-wmts"
-          type="raster"
-          tiles={[wmtsTileUrl]}
-          tileSize={256}
-        >
-          <MaplibreLayer id="web-map-link-layer-wmts" type="raster" />
-        </Source>
-      )}
-      <DeckGLOverlay
-        layers={layers}
-        getCursor={(props) => getCursor(mapRef, props)}
-      ></DeckGLOverlay>
-    </MaplibreMap>
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      <MaplibreMap
+        id="map"
+        ref={mapRef}
+        initialViewState={{
+          longitude: 0,
+          latitude: 0,
+          zoom: 1,
+        }}
+        projection={projection}
+        mapStyle={`https://basemaps.cartocdn.com/gl/${mapStyle}/style.json`}
+        style={{ zIndex: 0 }}
+        onLoad={() => setIsLoaded(true)}
+        onMoveEnd={() => {
+          const bbox = mapRef?.current
+            ?.getBounds()
+            .toArray()
+            .flatMap((a) => a);
+          const sanitizedBbox = bbox && sanitizeBbox(bbox);
+          if (sanitizedBbox) setBbox(sanitizedBbox);
+          const zoom = mapRef?.current?.getZoom();
+          if (zoom !== undefined) setZoom(zoom);
+        }}
+      >
+        {webMapLink && webMapLink.rel === "tilejson" && (
+          <Source
+            key={webMapLink.href}
+            id="web-map-link-tilejson"
+            type="raster"
+            url={webMapLink.href}
+          >
+            <MaplibreLayer id="web-map-link-layer-tilejson" type="raster" />
+          </Source>
+        )}
+        {webMapLink && webMapLink.rel === "wmts" && wmtsTileUrl && (
+          <Source
+            key={wmtsTileUrl}
+            id="web-map-link-wmts"
+            type="raster"
+            tiles={[wmtsTileUrl]}
+            tileSize={256}
+          >
+            <MaplibreLayer id="web-map-link-layer-wmts" type="raster" />
+          </Source>
+        )}
+        <DeckGLOverlay
+          layers={layers}
+          getCursor={(props) => getCursor(mapRef, props)}
+        ></DeckGLOverlay>
+      </MaplibreMap>
+      {visualizeItemBounds && <ItemsNotice filteredItems={filteredItems} />}
+    </div>
   );
 }
 
