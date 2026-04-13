@@ -1,6 +1,20 @@
 import { useStore } from "@/store";
-import { ButtonGroup, HStack, IconButton, List, Span } from "@chakra-ui/react";
-import { LuArrowRight, LuExternalLink, LuLink } from "react-icons/lu";
+import {
+  Button,
+  ButtonGroup,
+  Center,
+  HStack,
+  IconButton,
+  List,
+  Span,
+} from "@chakra-ui/react";
+import { useState } from "react";
+import {
+  LuArrowRight,
+  LuChevronDown,
+  LuExternalLink,
+  LuLink,
+} from "react-icons/lu";
 import type { StacLink } from "stac-ts";
 import { Section } from "../section";
 
@@ -13,14 +27,38 @@ const HIERARCHICAL_LINKS = [
   "items",
 ];
 
+const EXCLUDED_RELS = ["item"];
+const PAGE_SIZE = 50;
+
 export default function Links({ links }: { links: StacLink[] }) {
+  const filtered = links.filter((l) => !EXCLUDED_RELS.includes(l.rel));
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+  const displayed = filtered.slice(0, displayCount);
+  const hasMore = displayCount < filtered.length;
+
   return (
-    <Section icon={<LuLink />} title={"Links"} open={false}>
+    <Section
+      icon={<LuLink />}
+      title={`Links (${filtered.length})`}
+      open={false}
+    >
       <List.Root variant={"plain"}>
-        {links.map((link, i) => (
+        {displayed.map((link, i) => (
           <LinkListItem link={link} key={"link-" + i} />
         ))}
       </List.Root>
+      {hasMore && (
+        <Center>
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={() => setDisplayCount((c) => c + PAGE_SIZE)}
+          >
+            <LuChevronDown />
+            Show more ({filtered.length - displayCount} remaining)
+          </Button>
+        </Center>
+      )}
     </Section>
   );
 }

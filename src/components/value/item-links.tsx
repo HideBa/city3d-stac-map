@@ -3,13 +3,16 @@ import type { StacLink } from "stac-ts";
 import { useStacJson } from "../../hooks/stac";
 import { useStore } from "../../store";
 
+const MAX_ITEM_LINKS = 200;
 const BATCH_SIZE = 20;
 
 export default function ItemLinks({ links }: { links: StacLink[] }) {
+  // Cap item links to prevent mounting thousands of components
+  const cappedLinks = links.slice(0, MAX_ITEM_LINKS);
   const [loadedCount, setLoadedCount] = useState(BATCH_SIZE);
 
   // Progressively load more links as previous batches complete
-  const visibleLinks = links.slice(0, loadedCount);
+  const visibleLinks = cappedLinks.slice(0, loadedCount);
 
   return (
     <>
@@ -18,7 +21,7 @@ export default function ItemLinks({ links }: { links: StacLink[] }) {
           link={link}
           key={link.href}
           onLoaded={() =>
-            setLoadedCount((c) => Math.min(c + 1, links.length))
+            setLoadedCount((c) => Math.min(c + 1, cappedLinks.length))
           }
         />
       ))}
